@@ -66,4 +66,4 @@ class Associate(models.Model):
         max_digits=6, decimal_places=2, null=True, blank=True
     )
     phone = models.CharField(max_length=12, null=True, blank=True)
-
+    description = models.TextField(max_length=1000, null=True, blank=True)
