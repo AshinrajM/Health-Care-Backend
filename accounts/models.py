@@ -59,15 +59,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Associate(models.Model):
-    name = models.CharField(max_length=200, null=True, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     experience = models.CharField(max_length=50, null=True, blank=True)
     certificate_no = models.CharField(max_length=50, null=True, blank=True)
     fee_per_hour = models.DecimalField(
         max_digits=6, decimal_places=2, null=True, blank=True
     )
-    age = models.CharField(max_length=50, null=True, blank=True)
+    phone = models.CharField(max_length=12, null=True, blank=True)
 
-
-    def __str__(self):
-        return self.name
