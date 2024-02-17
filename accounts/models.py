@@ -29,16 +29,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    GENDER_CHOICES = [
-        ("M", "Male"),
-        ("F", "Female"),
-        ("O", "Other"),
-    ]
     email = models.EmailField(unique=True)
-    name = models.CharField(max_length=200, null=True, blank=True)
-    gender = models.CharField(
-        max_length=1, choices=GENDER_CHOICES, null=True, blank=True
-    )
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     profile_picture = models.ImageField(upload_to="profile/", blank=True, null=True)
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -60,6 +51,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Associate(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200, null=True, blank=True)
     experience = models.CharField(max_length=50, null=True, blank=True)
     certificate_no = models.CharField(max_length=50, null=True, blank=True)
     fee_per_hour = models.DecimalField(
