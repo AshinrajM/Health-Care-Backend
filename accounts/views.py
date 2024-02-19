@@ -1,5 +1,5 @@
 from rest_framework.views import APIView
-from .serializers import UserSerializer, UserLoginSerializer
+from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
@@ -17,21 +17,32 @@ class RegisterView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    # def delete(self, request, pk):
-    #     user = User.objects.filter(pk=pk)
-    #     if user:
-    #         user.delete()
-    #         return Response(
-    #             {"message": "User deleted successfully."}, status=status.HTTP_200_OK
-    #         )
-    #     return Response(
-    #         {"msg": "not valid credentials"}, status=status.HTTP_404_NOT_FOUND
-    #     )
+
+class RegisterAssociateView(APIView):
+    def post(self, request):
+        serializer = AssociateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        print("---------yuser creation success", user.id)
+
+        formData = request.data.copy()
+        formData["user"] = user.id
+
+        print("------------user id addded to form data ")
+
+        associate_serializer = AssociateSerializer(data=formData)
+        associate_serializer.is_valid(raise_exception=True)
+        associate_serializer.save()
+
+        print("associate creation success")
+
+        return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class UserLoginView(APIView):
@@ -67,4 +78,3 @@ class UserLoginView(APIView):
         return Response(
             {"messages": "Invalid user credentials"}, status=status.HTTP_404_NOT_FOUND
         )
-
