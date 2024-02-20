@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated
-from .models import User
+from .models import *
 from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class RegisterView(APIView):
@@ -26,10 +27,16 @@ class RegisterView(APIView):
 
 class RegisterAssociateView(APIView):
     def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        # want to send a mail to the associate this password as a content for his firt login
+
         serializer = AssociateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        print("---------yuser creation success", user.id)
+        print("---------user creation success", user.email)
+        print("---------user creation success")
 
         formData = request.data.copy()
         formData["user"] = user.id
@@ -41,6 +48,12 @@ class RegisterAssociateView(APIView):
         associate_serializer.save()
 
         print("associate creation success")
+
+        subject = "Welcome to HealthCare, This is a confidential mail with password for your associate login"
+        message = password
+        from_mail = settings.EMAIL_HOST_USER
+        to_mail = [email]
+        send_mail(subject, message, from_mail, to_mail)
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 

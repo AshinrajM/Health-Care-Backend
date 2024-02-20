@@ -87,6 +87,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "HealthCare.wsgi.application"
 
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_USE_TLS = True
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "ashinrajeevan319@gmail.com"
+EMAIL_HOST_PASSWORD = "zecq rwub opxl ydwl"
+EMAIL_PORT = 587
+
+
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 

@@ -24,9 +24,7 @@ class AssociateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_id = validated_data.pop("user", None)
-        print(
-            "user id got  msg from associateserial -------1---------------------------"
-        )
+        print("user id got  msg from associateserial -------1---------------------------")
 
         print(user_id.id)
         if user_id:
