@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -41,10 +42,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "channels",
     "accounts",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
+
+ASGI_APPLICATION = "HealthCare.asgi.application"
 
 ### this code specifies that default authentication class to be used forall API views in the application
 REST_FRAMEWORK = {
