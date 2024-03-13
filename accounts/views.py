@@ -11,12 +11,17 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 
-class UsersView(APIView):
+class UsersListView(APIView):
     def get(self, request, pk=None):
         users = User.objects.filter(is_associate=False)
         serializer = UserSerializer(users, many=True)
-        # print(users.id.users.isactive, users.email)
         return Response(serializer.data) 
+
+class AssociateListView(APIView):
+    def get(self,request):
+        associates=Associate.objects.all()
+        serializer=AssociateSerializer(associates,many=True)
+        return Response(serializer.data)
 
 
 class RegisterView(APIView):
