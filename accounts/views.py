@@ -15,6 +15,7 @@ class RegisterView(APIView):
     def get(self, request, pk=None):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
+        # print(users.id.users.isactive, users.email)
         return Response(serializer.data)
 
     def post(self, request):
