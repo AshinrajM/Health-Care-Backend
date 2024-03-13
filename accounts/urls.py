@@ -8,4 +8,5 @@ urlpatterns = [
     path(
         "register-associate", RegisterAssociateView.as_view(), name="register_associate"
     ),
+    path("userslist",UsersView.as_view(),name="users-list"),
 ]
