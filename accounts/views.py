@@ -28,7 +28,6 @@ class AssociateListView(APIView):
         # return Response(serializer.data)
 
 
-
 class RegisterView(APIView):
     def post(self, request):
 
@@ -95,10 +94,14 @@ class UserLoginView(APIView):
             refresh["role"] = role
             refresh["user"] = user.email
 
+            user_details = UserSerializer(user)
+            user_data = user_details.data
+
             data = {}
             data["role"] = role
             data["refresh"] = str(refresh)
             data["access"] = str(refresh.access_token)
+            data["user"] = user_data
 
             return Response(data, status=status.HTTP_200_OK)
         return Response(
