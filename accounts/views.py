@@ -69,6 +69,9 @@ class RegisterAssociateView(APIView):
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
+    def put(APIView):
+        pass
+
 
 class UserLoginView(APIView):
     def post(self, request):
