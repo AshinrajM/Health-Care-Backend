@@ -69,7 +69,7 @@ class RegisterAssociateView(APIView):
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
-    def put(APIView):
+    def patch(APIView):
         pass
 
 
@@ -99,7 +99,7 @@ class UserLoginView(APIView):
 
             user_details = UserSerializer(user)
             user_data = user_details.data
-
+  
             data = {}
             data["role"] = role
             data["refresh"] = str(refresh)
@@ -108,5 +108,6 @@ class UserLoginView(APIView):
 
             return Response(data, status=status.HTTP_200_OK)
         return Response(
-            {"messages": "Invalid user credentials"}, status=status.HTTP_404_NOT_FOUND
+            {"messages": "Invalid user credentials"},
+            status=status.HTTP_404_NOT_FOUND,
         )
