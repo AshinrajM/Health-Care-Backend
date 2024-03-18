@@ -5,7 +5,6 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        # fields = ["id", "email", "password"]
         fields = [
             "id",
             "email",
@@ -20,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
+
     def create(self, validated_data):
         password = validated_data.pop("password", None)
         user = self.Meta.model(**validated_data)
@@ -27,6 +27,15 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
             return user
+
+    def update(self, user, validated_data):
+        user.date_of_birth = validated_data.get("date_of_birth", user.date_of_birth)
+        user.location = validated_data.get("location", user.location)
+        # profile_picture = validated_data.get("profile_picture", None)
+        # if profile_picture:
+        #     user.profile_picture.save(profile_picture.name, profile_picture)
+        user.save()
+        return user
 
 
 class AssociateSerializer(serializers.ModelSerializer):

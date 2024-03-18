@@ -11,11 +11,36 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 
-class UsersListView(APIView):
+class UsersManageView(APIView):
     def get(self, request, pk=None):
         users = User.objects.filter(is_associate=False)
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+
+    def patch(self, request):
+        print("arrived patch method")
+        user_id = request.data.get("id")
+        if not user_id:
+            return Response(
+                {"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        print(" sending to serializer")
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        print(" received from serializer")
+
+        if serializer.is_valid():
+            print("if c::::::::")
+            serializer.save()
+            print(serializer.data, "success")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        print("else c::::::::::")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AssociateListView(APIView):
