@@ -30,11 +30,26 @@ class AssociateListView(APIView):
 
 class RegisterView(APIView):
     def post(self, request):
-
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def patch(self, request):
+        print("aarrived patch")
+        user_id = request.data.get("userId")
+        print(request.data, "SAMPLe")
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        user.is_active = not user.is_active
+        user.save()
+
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RegisterAssociateView(APIView):
@@ -69,9 +84,6 @@ class RegisterAssociateView(APIView):
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
-    def patch(APIView):
-        pass
-
 
 class UserLoginView(APIView):
     def post(self, request):
@@ -99,7 +111,7 @@ class UserLoginView(APIView):
 
             user_details = UserSerializer(user)
             user_data = user_details.data
-  
+
             data = {}
             data["role"] = role
             data["refresh"] = str(refresh)
