@@ -78,7 +78,6 @@ class AssociateUserSerializer(serializers.ModelSerializer):
             )
             return user
 
-
 class UserLoginSerializer(serializers.Serializer):
 
     email = serializers.EmailField()

@@ -33,7 +33,7 @@ class UsersManageView(APIView):
         print(" sending to serializer")
         serializer = UserSerializer(user, data=request.data, partial=True)
         print(" received from serializer")
-
+        
         if serializer.is_valid():
             print("if c::::::::")
             serializer.save()
