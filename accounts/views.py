@@ -33,7 +33,7 @@ class UsersManageView(APIView):
         print(" sending to serializer")
         serializer = UserSerializer(user, data=request.data, partial=True)
         print(" received from serializer")
-        
+
         if serializer.is_valid():
             print("if c::::::::")
             serializer.save()
@@ -113,13 +113,10 @@ class RegisterAssociateView(APIView):
 class UserLoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
         email = serializer.data.get("email")
         password = serializer.data.get("password")
-
         user = authenticate(email=email, password=password)
-
         if user:
             login(request, user)
 
@@ -133,16 +130,19 @@ class UserLoginView(APIView):
 
             refresh["role"] = role
             refresh["user"] = user.email
-
             user_details = UserSerializer(user)
             user_data = user_details.data
-
             data = {}
             data["role"] = role
             data["refresh"] = str(refresh)
             data["access"] = str(refresh.access_token)
             data["user"] = user_data
 
+            if role == "associate":
+                associate = Associate.objects.get(user=user)
+                associate_data = AssociateSerializer(associate).data
+                data["associate"] = associate_data
+            print(data)
             return Response(data, status=status.HTTP_200_OK)
         return Response(
             {"messages": "Invalid user credentials"},
