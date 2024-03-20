@@ -19,7 +19,6 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
-
     def create(self, validated_data):
         password = validated_data.pop("password", None)
         user = self.Meta.model(**validated_data)
@@ -31,9 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, user, validated_data):
         user.date_of_birth = validated_data.get("date_of_birth", user.date_of_birth)
         user.location = validated_data.get("location", user.location)
-        # profile_picture = validated_data.get("profile_picture", None)
-        # if profile_picture:
-        #     user.profile_picture.save(profile_picture.name, profile_picture)
+        profile_picture = validated_data.get("profile_picture", None)
+        if profile_picture:
+            user.profile_picture = profile_picture
+
         user.save()
         return user
 
@@ -77,6 +77,7 @@ class AssociateUserSerializer(serializers.ModelSerializer):
                 "user created msg from associateuserserial ----------------------------------"
             )
             return user
+
 
 class UserLoginSerializer(serializers.Serializer):
 

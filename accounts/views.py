@@ -9,15 +9,25 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class UsersManageView(APIView):
+
+    parser_classes = [MultiPartParser, FormParser]
+
     def get(self, request, pk=None):
         users = User.objects.filter(is_associate=False)
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
     def patch(self, request):
+
+        location = request.data.get("location")
+        print(location, "received location")
+        p = request.data.get("profile_picture")
+        print(p, "picture")
+
         print("arrived patch method")
         user_id = request.data.get("id")
         if not user_id:
@@ -40,10 +50,12 @@ class UsersManageView(APIView):
             print(serializer.data, "success")
             return Response(serializer.data, status=status.HTTP_200_OK)
         print("else c::::::::::")
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AssociateListView(APIView):
+
     def get(self, request):
         associates = Associate.objects.all()
         serializer = AssociateSerializer(associates, many=True)
@@ -82,7 +94,7 @@ class RegisterAssociateView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
-        # want to send a mail to the associate this password as a content for his firt login
+        # want to send a mail to the associate this password as a content for his first login
 
         serializer = AssociateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
