@@ -10,10 +10,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.auth.hashers import check_password
 
 
 class UsersManageView(APIView):
-
     parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request, pk=None):
@@ -22,13 +22,16 @@ class UsersManageView(APIView):
         return Response(serializer.data)
 
     def patch(self, request):
-
         location = request.data.get("location")
-        print(location, "received location")
+        # print(location, "received location")
         p = request.data.get("profile_picture")
-        print(p, "picture")
+        # print(p, "picture")
 
-        print("arrived patch method")
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+        print(current_password,new_password,"show received datas")
+
+        # print("arrived patch method")
         user_id = request.data.get("id")
         if not user_id:
             return Response(
@@ -40,17 +43,31 @@ class UsersManageView(APIView):
             return Response(
                 {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
             )
-        print(" sending to serializer")
+
+        if current_password and new_password:
+            print("validation-1")
+            if check_password(current_password, user.password):
+                print("validation-2")
+                user.set_password(new_password)
+                user.save()
+            else:
+                print("didnt changed password")
+                return Response(
+                    {"error": "Invalid current password."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # print(" sending to serializer")
         serializer = UserSerializer(user, data=request.data, partial=True)
-        print(" received from serializer")
+        # print(" received from serializer")
 
         if serializer.is_valid():
             print("if c::::::::")
             serializer.save()
-            print(serializer.data, "success")
+            # print(serializer.data, "success")
             return Response(serializer.data, status=status.HTTP_200_OK)
         print("else c::::::::::")
-        print(serializer.errors)
+        # print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
