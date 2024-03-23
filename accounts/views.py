@@ -29,7 +29,7 @@ class UsersManageView(APIView):
 
         current_password = request.data.get("currentPassword")
         new_password = request.data.get("newPassword")
-        print(current_password,new_password,"show received datas")
+        print(current_password, new_password, "show received datas")
 
         # print("arrived patch method")
         user_id = request.data.get("id")
@@ -173,7 +173,13 @@ class UserLoginView(APIView):
                 data["associate"] = associate_data
             print(data)
             return Response(data, status=status.HTTP_200_OK)
+
+        # If authentication fails, check for specific reasons (email, password, or both)
+        errors = {}
+        if not errors:
+            errors["messages"] = "Invalid email or password"
+
         return Response(
-            {"messages": "Invalid user credentials"},
-            status=status.HTTP_404_NOT_FOUND,
+            errors,
+            status=status.HTTP_401_UNAUTHORIZED,
         )
