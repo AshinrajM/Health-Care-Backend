@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "channels",
     "accounts",
+    "booking",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
