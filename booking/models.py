@@ -8,5 +8,5 @@ class Available(models.Model):
     is_morning = models.BooleanField(default=False)
     is_noon = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.id
+    # def __str__(self):
+    #     return self.date
