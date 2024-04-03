@@ -33,3 +33,8 @@ class AvailableView(APIView):
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    def get(self, request):
+        list = Available.objects.all()
+        serializer = AvailableSerializer(Available, many=True)
+        return Response(serializer.data)
