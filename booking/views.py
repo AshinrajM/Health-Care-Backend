@@ -36,5 +36,5 @@ class AvailableView(APIView):
 
     def get(self, request):
         list = Available.objects.all()
-        serializer = AvailableSerializer(Available, many=True)
+        serializer = AvailableSerializer(list, many=True)
         return Response(serializer.data)

@@ -23,15 +23,12 @@ class UsersManageView(APIView):
 
     def patch(self, request):
         location = request.data.get("location")
-        # print(location, "received location")
         p = request.data.get("profile_picture")
-        # print(p, "picture")
 
         current_password = request.data.get("currentPassword")
         new_password = request.data.get("newPassword")
         print(current_password, new_password, "show received datas")
 
-        # print("arrived patch method")
         user_id = request.data.get("id")
         if not user_id:
             return Response(
@@ -57,17 +54,13 @@ class UsersManageView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # print(" sending to serializer")
         serializer = UserSerializer(user, data=request.data, partial=True)
-        # print(" received from serializer")
 
         if serializer.is_valid():
             print("if c::::::::")
             serializer.save()
-            # print(serializer.data, "success")
             return Response(serializer.data, status=status.HTTP_200_OK)
         print("else c::::::::::")
-        # print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -77,9 +70,6 @@ class AssociateListView(APIView):
         associates = Associate.objects.all()
         serializer = AssociateSerializer(associates, many=True)
         return Response(serializer.data)
-        # users = User.objects.filter(is_associate=True)
-        # serializer = UserSerializer(users, many=True)
-        # return Response(serializer.data)
 
 
 class RegisterView(APIView):
@@ -174,12 +164,16 @@ class UserLoginView(APIView):
             print(data)
             return Response(data, status=status.HTTP_200_OK)
 
-        # If authentication fails, check for specific reasons (email, password, or both)
-        errors = {}
-        if not errors:
-            errors["messages"] = "Invalid email or password"
-
-        return Response(
-            errors,
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+        else:
+            try:
+                user = User.objects.get(email=email)
+                # If the email exists but the password is incorrect, return a custom message
+                return Response(
+                    {"detail": "Check password"}, status=status.HTTP_401_UNAUTHORIZED
+                )
+            except User.DoesNotExist:
+                # If the email does not exist, return a generic error message
+                return Response(
+                    {"detail": "Invalid email or password"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
