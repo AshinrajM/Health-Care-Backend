@@ -11,6 +11,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
+import pyotp
 
 
 class UsersManageView(APIView):
@@ -72,15 +73,24 @@ class AssociateListView(APIView):
         return Response(serializer.data)
 
 
-Temp_storage = {}
-
-
 class RegisterView(APIView):
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # serializer = UserSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        otp = pyotp.TOTP(pyotp.random_base32()).now()
+        subject = "Welcome to HealthCare, This is the otp for your verification"
+        message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
+        from_mail = settings.EMAIL_HOST_USER
+        to_mail = [email]
+        send_mail(subject, message, from_mail, to_mail)
+
+
 
     def patch(self, request):
         print("aarrived patch")
