@@ -72,6 +72,9 @@ class AssociateListView(APIView):
         return Response(serializer.data)
 
 
+Temp_storage = {}
+
+
 class RegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)

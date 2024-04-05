@@ -35,7 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     location = models.CharField(max_length=200, null=True, blank=True)
     is_associate = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_google = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -52,9 +52,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Associate(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=200, null=True, blank=True)
-
     age = models.IntegerField(default=25)
-
     experience = models.CharField(max_length=50, null=True, blank=True)
     certificate_no = models.CharField(max_length=50, null=True, blank=True)
     fee_per_hour = models.DecimalField(
@@ -65,3 +63,9 @@ class Associate(models.Model):
 
     def __str__(self):
         return self.name
+
+class Temp(models.Model):
+    temp_id = models.CharField(max_length=100, primary_key=True)
+    email = models.EmailField()
+    password = models.CharField(max_length=100)
+    otp = models.CharField(max_length=6)
