@@ -33,11 +33,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     profile_picture = models.ImageField(upload_to="profile/", blank=True, null=True)
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    date_of_birth = models.DateField(null=True, blank=True)
     location = models.CharField(max_length=200, null=True, blank=True)
     is_associate = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_google = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
