@@ -35,7 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     wallet = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     location = models.CharField(max_length=200, null=True, blank=True)
     is_associate = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_google = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -63,6 +63,7 @@ class Associate(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Temp(models.Model):
     temp_id = models.CharField(max_length=100, primary_key=True)

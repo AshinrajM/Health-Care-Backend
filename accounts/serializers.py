@@ -8,20 +8,27 @@ class UserSerializer(serializers.ModelSerializer):
         fields = "__all__"
         extra_kwargs = {"password": {"write_only": True}}
 
-    def create(self, validated_data):
-        password = validated_data.pop("password", None)
-        user = self.Meta.model(**validated_data)
-        if password:
-            user.set_password(password)
-            user.save()
-            return user
+    # def create(self, validated_data):
+    #     password = validated_data.pop("password", None)
+    #     user = self.Meta.model(**validated_data)
+    #     if password:
+    #         user.set_password(password)
+    #         user.save()
+    #         return user
 
     def update(self, user, validated_data):
-        user.date_of_birth = validated_data.get("date_of_birth", user.date_of_birth)
-        user.location = validated_data.get("location", user.location)
-        profile_picture = validated_data.get("profile_picture", None)
-        if profile_picture:
-            user.profile_picture = profile_picture
+
+        fields_to_update = ["date_of_birth", "location", "profile_picture"]
+        for field_name in fields_to_update:
+            field_value = validated_data.get(field_name)
+            if field_value is not None:  # Check if the field is provided in validated_data
+                setattr(user, field_name, field_value)
+
+        # user.date_of_birth = validated_data.get("date_of_birth", user.date_of_birth)
+        # user.location = validated_data.get("location", user.location)
+        # profile_picture = validated_data.get("profile_picture", None)
+        # if profile_picture:
+        #     user.profile_picture = profile_picture
 
         user.save()
         return user
@@ -80,7 +87,8 @@ class UserLoginSerializer(serializers.Serializer):
         print(password)
 
         if email and password:
-            user = User.objects.filter(email=email).first()
+            # user = User.objects.filter(email=email).first()
+            user = User.objects.get(email=email)
             if user:
                 return data
             raise serializers.ValidationError("invalid user credentials")

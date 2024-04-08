@@ -28,7 +28,8 @@ class UsersManageView(APIView):
 
         current_password = request.data.get("currentPassword")
         new_password = request.data.get("newPassword")
-        print(current_password, new_password, "show received datas")
+        print(new_password, "new")
+        print(current_password, "current")
 
         user_id = request.data.get("id")
         if not user_id:
@@ -37,6 +38,7 @@ class UsersManageView(APIView):
             )
         try:
             user = User.objects.get(id=user_id)
+            print("user", user.email)
         except User.DoesNotExist:
             return Response(
                 {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
@@ -48,6 +50,7 @@ class UsersManageView(APIView):
                 print("validation-2")
                 user.set_password(new_password)
                 user.save()
+                return Response(status=status.HTTP_200_OK)
             else:
                 print("didnt changed password")
                 return Response(
@@ -75,22 +78,25 @@ class AssociateListView(APIView):
 
 class RegisterView(APIView):
     def post(self, request):
-        # serializer = UserSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
-
         email = request.data.get("email")
         password = request.data.get("password")
 
+        print(email, password, "arrived")
+
         otp = pyotp.TOTP(pyotp.random_base32()).now()
+
+        print(otp, "otp")
+
         subject = "Welcome to HealthCare, This is the otp for your verification"
-        message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
+        message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification   is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
         from_mail = settings.EMAIL_HOST_USER
-        to_mail = [email]
-        send_mail(subject, message, from_mail, to_mail)
+        recipient_list = [email]
+        send_mail(subject, message, from_mail, recipient_list)
+        temp_id = f"{email}_{otp}"
+        temp = Temp(temp_id=temp_id, email=email, password=password, otp=otp)
+        temp.save()
 
-
+        return Response({"temp_id": temp_id}, status=status.HTTP_200_OK)
 
     def patch(self, request):
         print("aarrived patch")
@@ -107,6 +113,37 @@ class RegisterView(APIView):
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class VerifyView(APIView):
+    def post(self, request):
+        otp = request.data.get("otp")
+        temp_id = request.data.get("temp_id")
+
+        try:
+            temp_registration = Temp.objects.get(temp_id=temp_id)
+            stored = temp_registration.otp
+
+            print("password", temp_registration.password)
+
+            if otp == stored:
+
+                user = User.objects.create_user(
+                    email=temp_registration.email, password=temp_registration.password
+                )
+                user.save()
+
+                temp_registration.delete()
+
+                return Response({"message": "created"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(
+                    {"message": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST
+                )
+        except Temp.DoesNotExist:
+            return Response(
+                {"message": "Invalid temporary ID"}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class RegisterAssociateView(APIView):
@@ -144,12 +181,14 @@ class RegisterAssociateView(APIView):
 
 class UserLoginView(APIView):
     def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.data.get("email")
-        password = serializer.data.get("password")
+        email = request.data.get("email")
+        password = request.data.get("password")
+        print(email, password, "user login data")
+
         user = authenticate(email=email, password=password)
+        print(user, "Check User::")
         if user:
+            print("user data authentication")
             login(request, user)
 
             refresh = RefreshToken.for_user(user)
@@ -179,7 +218,13 @@ class UserLoginView(APIView):
 
         else:
             try:
+                print(email, "email")
                 user = User.objects.get(email=email)
+                print(user, "Check User")
+                if user:
+                    print(user, "exists")
+                else:
+                    print("user doesmt exist")
                 # If the email exists but the password is incorrect, return a custom message
                 return Response(
                     {"detail": "Check password"}, status=status.HTTP_401_UNAUTHORIZED
