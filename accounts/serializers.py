@@ -24,12 +24,6 @@ class UserSerializer(serializers.ModelSerializer):
             if field_value is not None:  # Check if the field is provided in validated_data
                 setattr(user, field_name, field_value)
 
-        # user.date_of_birth = validated_data.get("date_of_birth", user.date_of_birth)
-        # user.location = validated_data.get("location", user.location)
-        # profile_picture = validated_data.get("profile_picture", None)
-        # if profile_picture:
-        #     user.profile_picture = profile_picture
-
         user.save()
         return user
 
