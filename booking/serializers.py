@@ -8,4 +8,4 @@ class AvailableSerializer(serializers.ModelSerializer):
     # associate_details = AssociateSerializer(source="associate", read_only=True)
     class Meta:
         model = Available
-        fields = ["associate", "date", "is_morning", "is_noon"]
+        fields = ["id", "associate", "date", "is_morning", "is_noon"]
