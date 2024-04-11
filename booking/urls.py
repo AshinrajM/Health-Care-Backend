@@ -3,5 +3,7 @@ from .views import *
 
 urlpatterns = [
     path("slot/", AvailableView.as_view(), name="available"),
-    # path('available')
+    path("checkout", StripeCheckout.as_view(), name="stripe-checkout"),
+    path("webhook-test/", Webhook.as_view()),
+    path("test-payment/", test_payment),
 ]

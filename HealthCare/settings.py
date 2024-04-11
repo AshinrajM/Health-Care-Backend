@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -32,7 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -62,8 +63,8 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -162,6 +163,17 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Example: Your frontend app's address
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",  # Example: Your frontend app's address
+#     "https://checkout.stripe.com",
+# ]
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+STRIPE_PUBLIC_KEY = "pk_test_51P1ghRSFRxcuzyZ4XqjPbLhnnJNmHfBZHr4vQzgOsM7aicuoicf2ANDJbDsTVoNprdfRU2VHi2wg325zJP9Uvcb200Ofu8Z2bN"
+STRIPE_SECRET_KEY = "sk_test_51P1ghRSFRxcuzyZ4wrA3rkwoPKEeB20Ceyh7rq8DQnbF5KRjeAPcUvIyrdScE2e2fuMop6ZRTxKC3qvB5sYUYQx900sb0HqMjP"
+STRIPE_WEBHOOK_SECRET = (
+    "whsec_d29bd22f24b56272728e8a12f066d0603faaba9da11650b68ba99a45a8ab5a15"
+)
+
+SITE_URL = "http://localhost:3000"

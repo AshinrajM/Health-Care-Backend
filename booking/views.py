@@ -1,12 +1,19 @@
+import stripe
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework import generics
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q
+from django.conf import settings
+from django.shortcuts import redirect
 
 # Create your views here.
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
 class AvailableView(APIView):
@@ -73,5 +80,85 @@ class AvailableView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # def delete(self,request):
 
-# class
+
+
+@api_view(["POST"])
+def test_payment(request):
+    test_payment_intent = stripe.PaymentIntent.create(
+        amount=1000,
+        currency="pln",
+        payment_method_types=["card"],
+        receipt_email="test@example.com",
+    )
+    return Response(status=status.HTTP_200_OK, data=test_payment_intent)
+
+
+class StripeCheckout(APIView):
+    def post(self, request):
+        print(request.data)
+        # dataDict = dict(request.data)
+
+        # price = dataDict['price'][0]
+        price = request.data.get("payable_amount")
+        print(price)
+        # product_name = dataDict['product_name'][0]
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": "usd",
+                            "product_data": {
+                                "name": "slot booking",
+                            },
+                            "unit_amount": price,
+                        },
+                        "quantity": 1,
+                    }
+                ],
+                mode="payment",
+                success_url="http://localhost:3000/secured/success",
+                cancel_url="http://localhost:3000/secured/failed",
+            )
+            return redirect(checkout_session.url, code=303)
+        except Exception as e:
+            print(e)
+            # return e
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class Webhook(APIView):
+    def post(self, request):
+        event = None
+        payload = request.body
+        sig_header = request.META["HTTP_STRIPE_SIGNATURE"]
+
+        print("webhook")
+        print(stripe_webhook_secret)
+        print(sig_header)
+
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except ValueError as err:
+            # Invalid payload
+            raise err
+        except stripe.error.SignatureVerificationError as err:
+            # Invalid signature
+            raise err
+
+        # Handle the event
+        if event.type == "payment_intent.succeeded":
+            payment_intent = event.data.object
+            print("--------payment_intent ---------->", payment_intent)
+        elif event.type == "payment_method.attached":
+            payment_method = event.data.object
+            print("--------payment_method ---------->", payment_method)
+        # ... handle other event types
+        else:
+            print("Unhandled event type {}".format(event.type))
+
+        return JsonResponse(success=True, safe=False)
