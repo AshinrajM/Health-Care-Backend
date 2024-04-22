@@ -10,4 +10,10 @@ urlpatterns = [
     ),
     path("userslist", UsersManageView.as_view(), name="users-list"),
     path("associatelist", AssociateListView.as_view(), name="associate-list"),
+    path(
+        "reset-password-validate",
+        UserResetPasswordView.as_view(),
+        name="reset_password",
+    ),
+    path("reset-verify-otp", OtpVerifyView.as_view(), name="reset_verify_otp"),
 ]

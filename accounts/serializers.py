@@ -8,13 +8,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = "__all__"
         extra_kwargs = {"password": {"write_only": True}}
 
-    # def create(self, validated_data):
-    #     password = validated_data.pop("password", None)
-    #     user = self.Meta.model(**validated_data)
-    #     if password:
-    #         user.set_password(password)
-    #         user.save()
-    #         return user
 
     def update(self, user, validated_data):
 
@@ -87,3 +80,4 @@ class UserLoginSerializer(serializers.Serializer):
                 return data
             raise serializers.ValidationError("invalid user credentials")
         raise serializers.ValidationError("Both fields are required")
+

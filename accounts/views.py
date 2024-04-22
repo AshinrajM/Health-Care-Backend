@@ -235,3 +235,68 @@ class UserLoginView(APIView):
                     {"detail": "Invalid email or password"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
+
+
+class UserResetPasswordView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"message": "Email is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            user = User.objects.get(email=email)
+            serializer = UserSerializer(user)
+            otp = pyotp.TOTP(pyotp.random_base32()).now()
+            temp_id = f"{email}_{otp}"
+
+            subject = "Welcome to HealthCare, This is the otp for your verification"
+            message = f"Hello{email}!\n\nWelcome to HealthCare. To reset your account password, please use the following OTP to verify your identity: {otp}\n\nPlease enter this OTP to complete the password reset process.\n\nIf you did not request a password reset for your HealthCare account, please disregard this email.\n\nBest regards,\nThe HealthCare Team"
+
+            from_mail = settings.EMAIL_HOST_USER
+
+            recipient_list = [email]
+            print(recipient_list, "receiver")
+
+            send_mail(subject, message, from_mail, recipient_list)
+            print("mail send ")
+
+            temp_id = f"{email}_{otp}"
+            temp = Temp(temp_id=temp_id, email=email, otp=otp)
+            temp.save()
+            return Response({"temp_id": temp_id}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response(
+                {"message": "Email does not exist"}, status=status.HTTP_404_NOT_FOUND
+            )
+    def patch(self, request):
+        temp_id = request.data.get('tempId')
+        password = request.data.get('password')
+
+        try:
+            instance = Temp.objects.get(temp_id=temp_id)
+            email = instance.email
+            try:
+                user = User.objects.get(email=email)
+                user.set_password(password)
+                user.save()
+                return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Temp.DoesNotExist:
+            return Response({'error': 'Temp ID not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class OtpVerifyView(APIView):
+    def post(self, request):
+        temp_id = request.data.get("tempId")
+        otp = request.data.get("otp")
+        print("otp verify")
+        try:
+            instance = Temp.objects.get(temp_id=temp_id, otp=otp)
+            print("otp verified")
+            return Response({"message": "Otp verified"}, status=status.HTTP_200_OK)
+        except Temp.DoesNotExist:
+            return Response(
+                {"message": "Otp is not valid"}, status=status.HTTP_404_NOT_FOUND
+            )
