@@ -63,10 +63,10 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -163,11 +163,11 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
 }
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # Example: Your frontend app's address
-#     "https://checkout.stripe.com",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 STRIPE_PUBLIC_KEY = "pk_test_51P1ghRSFRxcuzyZ4XqjPbLhnnJNmHfBZHr4vQzgOsM7aicuoicf2ANDJbDsTVoNprdfRU2VHi2wg325zJP9Uvcb200Ofu8Z2bN"

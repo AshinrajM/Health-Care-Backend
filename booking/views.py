@@ -8,8 +8,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q
 from django.conf import settings
-from django.shortcuts import redirect
+from django.http import JsonResponse
 
+
+# from corsheaders.response import SuccessMessageResponse
 # Create your views here.
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -83,7 +85,6 @@ class AvailableView(APIView):
     # def delete(self,request):
 
 
-
 # @api_view(["POST"])
 # def test_payment(request):
 #     test_payment_intent = stripe.PaymentIntent.create(
@@ -98,10 +99,12 @@ class AvailableView(APIView):
 class StripeCheckout(APIView):
     def post(self, request):
         print(request.data)
-        # dataDict = dict(request.data)
-
-        # price = dataDict['price'][0]
         price = request.data.get("payable_amount")
+        user_id = request.data.get("user_id")
+        slot_id = request.data.get("slot_id")
+
+        print(request.data)
+
         print(price)
         # product_name = dataDict['product_name'][0]
         try:
@@ -121,8 +124,16 @@ class StripeCheckout(APIView):
                 mode="payment",
                 success_url="http://localhost:3000/secured/success",
                 cancel_url="http://localhost:3000/secured/failed",
+                payment_intent_data={
+                    "metadata": {
+                        "user_id": user_id,
+                        "slot_id": slot_id,
+                    }
+                },
             )
-            return redirect(checkout_session.url, code=303)
+            print(checkout_session.url, "url")
+            # return redirect(checkout_session.url, code=303)
+            return Response({"url": checkout_session.url}, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             # return e
@@ -133,12 +144,13 @@ class StripeCheckout(APIView):
 
 class Webhook(APIView):
     def post(self, request):
+        print("arrived")
         event = None
         payload = request.body
         sig_header = request.META["HTTP_STRIPE_SIGNATURE"]
 
         print("webhook")
-        print(stripe_webhook_secret)
+        print(webhook_secret)
         print(sig_header)
 
         try:
@@ -161,4 +173,11 @@ class Webhook(APIView):
         else:
             print("Unhandled event type {}".format(event.type))
 
-        return JsonResponse(success=True, safe=False)
+        # return JsonResponse(success=True, safe=False)
+        handle_payment(payment_intent)
+        return JsonResponse({"success": True})
+
+
+# def handle_payment(payment_intent):
+
+
