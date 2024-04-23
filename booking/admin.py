@@ -4,4 +4,4 @@ from .models import *
 # Register your models here.
 
 admin.site.register(Available)
-admin.site.register(Payment)
+admin.site.register(Booking)

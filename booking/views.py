@@ -112,11 +112,11 @@ class StripeCheckout(APIView):
                 line_items=[
                     {
                         "price_data": {
-                            "currency": "usd",
+                            "currency": "inr",
                             "product_data": {
                                 "name": "slot booking",
                             },
-                            "unit_amount": price,
+                            "unit_amount": price * 100,
                         },
                         "quantity": 1,
                     }
@@ -124,6 +124,7 @@ class StripeCheckout(APIView):
                 mode="payment",
                 success_url="http://localhost:3000/secured/success",
                 cancel_url="http://localhost:3000/secured/failed",
+                billing_address_collection="required",
                 payment_intent_data={
                     "metadata": {
                         "user_id": user_id,
@@ -166,6 +167,7 @@ class Webhook(APIView):
         if event.type == "payment_intent.succeeded":
             payment_intent = event.data.object
             print("--------payment_intent ---------->", payment_intent)
+            handle_payment(payment_intent)
         elif event.type == "payment_method.attached":
             payment_method = event.data.object
             print("--------payment_method ---------->", payment_method)
@@ -174,10 +176,36 @@ class Webhook(APIView):
             print("Unhandled event type {}".format(event.type))
 
         # return JsonResponse(success=True, safe=False)
-        handle_payment(payment_intent)
+
         return JsonResponse({"success": True})
 
 
-# def handle_payment(payment_intent):
-
-
+def handle_payment(payment_intent):
+    print("arrived")
+    user_id = payment_intent["metadata"]["user_id"]
+    slot_id = payment_intent["metadata"]["slot_id"]
+    print(user_id, "id of user")
+    print(slot_id, "id of slot")
+    payment_id = payment_intent["id"]
+    amount_paid = payment_intent["amount"] / 100
+    print(amount_paid, "amount_paid")
+    status = payment_intent["status"]
+    print(status, "stat")
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        pass
+    try:
+        slot = Available.objects.get(id=slot_id)
+    except Available.DoesNotExist:
+        pass
+    booking = Booking.objects.create(
+        user=user,
+        slot=slot,
+        payment_id=payment_id,
+        amount_paid=amount_paid,
+        status=True,
+    )
+    booking.save()
+    print("booking instance created", booking.id)
+    print("booking instance created", booking.created_at)
