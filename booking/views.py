@@ -11,9 +11,6 @@ from django.conf import settings
 from django.http import JsonResponse
 
 
-# from corsheaders.response import SuccessMessageResponse
-# Create your views here.
-
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
@@ -88,10 +85,9 @@ class StripeCheckout(APIView):
         price = request.data.get("payable_amount")
         user_id = request.data.get("user_id")
         slot_id = request.data.get("slot_id")
+        shift = request.data.get("shift")
+        print(shift,"in stripe check")
 
-        print(request.data)
-
-        print(price)
         # product_name = dataDict['product_name'][0]
         try:
             checkout_session = stripe.checkout.Session.create(
@@ -112,10 +108,7 @@ class StripeCheckout(APIView):
                 cancel_url="http://localhost:3000/secured/failed",
                 billing_address_collection="required",
                 payment_intent_data={
-                    "metadata": {
-                        "user_id": user_id,
-                        "slot_id": slot_id,
-                    }
+                    "metadata": {"user_id": user_id, "slot_id": slot_id, "shift": shift}
                 },
             )
             print(checkout_session.url, "url")
@@ -165,9 +158,10 @@ class Webhook(APIView):
 
 
 def handle_payment(payment_intent):
-    print("arrived")
+    print("arrived in booking creation")
     user_id = payment_intent["metadata"]["user_id"]
     slot_id = payment_intent["metadata"]["slot_id"]
+    shift = payment_intent['metadata']['shift']
     print(user_id, "id of user")
     print(slot_id, "id of slot")
     payment_id = payment_intent["id"]

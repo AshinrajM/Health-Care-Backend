@@ -11,6 +11,13 @@ class Available(models.Model):
 
 
 class Booking(models.Model):
+
+    STATUS_CHOICES = [
+        ("confirmed", "confirmed"),
+        ("completed", "completed"),
+        ("cancelled", "cancelled"),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     slot = models.ForeignKey(Available, on_delete=models.CASCADE)
     payment_id = models.CharField(max_length=100, blank=True, null=True)
@@ -19,4 +26,6 @@ class Booking(models.Model):
     )
     date = models.DateField(default=date(2024, 12, 2))
     status = models.CharField(max_length=100, blank=True, null=True)
+    # status = models.CharField(max_length=100, choices=STATUS_CHOICES, blank=True, null=True,default='confirmed')
+    shift = models.CharField(max_length=20, blank=True, null=True, default="morning")
     created_at = models.DateField(auto_now_add=True)
