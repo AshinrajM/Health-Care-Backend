@@ -20,7 +20,6 @@ webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 class AvailableView(APIView):
     def get(self, request):
-
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
         if associate_id:
@@ -66,7 +65,6 @@ class AvailableView(APIView):
         existing_instance = Available.objects.filter(
             date=date, associate=associate_id, is_morning=morning, is_noon=noon
         ).exists()
-
         if existing_instance:
             return Response(
                 {
@@ -75,7 +73,6 @@ class AvailableView(APIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
-
         serializer = AvailableSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -83,17 +80,6 @@ class AvailableView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # def delete(self,request):
-
-
-# @api_view(["POST"])
-# def test_payment(request):
-#     test_payment_intent = stripe.PaymentIntent.create(
-#         amount=1000,
-#         currency="pln",
-#         payment_method_types=["card"],
-#         receipt_email="test@example.com",
-#     )
-#     return Response(status=status.HTTP_200_OK, data=test_payment_intent)
 
 
 class StripeCheckout(APIView):
@@ -174,9 +160,7 @@ class Webhook(APIView):
         # ... handle other event types
         else:
             print("Unhandled event type {}".format(event.type))
-
         # return JsonResponse(success=True, safe=False)
-
         return JsonResponse({"success": True})
 
 
@@ -202,10 +186,40 @@ def handle_payment(payment_intent):
     booking = Booking.objects.create(
         user=user,
         slot=slot,
+        date=slot.date,
         payment_id=payment_id,
         amount_paid=amount_paid,
-        status=True,
+        status="suceessfull",
     )
     booking.save()
     print("booking instance created", booking.id)
     print("booking instance created", booking.created_at)
+
+
+@api_view(["GET"])
+def bookings(request):
+    user_id = request.query_params.get("userId")
+    print(user_id, "why")
+    try:
+        bookings = Booking.objects.filter(user=user_id).order_by("-id").first()
+        print(bookings.slot)
+        print(bookings.slot.associate.name, "name of associate")
+        associate_name = bookings.slot.associate.name
+        booking_serializer = BookingSerializer(bookings)
+        associate_serializer = AssociateSerializer(bookings.slot.associate)
+
+        booking_data = booking_serializer.data
+        # Add the name of the associate to the booking data
+        booking_data["associate_name"] = associate_serializer.data["name"]
+
+        return Response(
+            {
+                "booking": booking_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Booking.DoesNotExist:
+        return Response(
+            {"message": "No bookings found for the user"},
+            status=status.HTTP_404_NOT_FOUND,
+        )

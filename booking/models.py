@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import Associate, User
+from datetime import date
 
 
 class Available(models.Model):
@@ -16,5 +17,6 @@ class Booking(models.Model):
     amount_paid = models.DecimalField(
         max_digits=10, decimal_places=2, blank=True, null=True
     )
+    date = models.DateField(default=date(2024, 12, 2))
     status = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateField(auto_now_add=True)
