@@ -11,6 +11,16 @@ class AvailableSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+    associate = serializers.SerializerMethodField()
+
     class Meta:
         model = Booking
         fields = "__all__"
+
+    def get_associate(self, obj):
+        if self.context.get("include_associate", True):
+            return AssociateSerializer(obj.slot.associate).data
+        return None
+
+
+# Serializer Method Fields in Django DRF provide a dynamic way to customize your API responses. Instead of static values, these fields allow you to define methods that manipulate the data before it's serialized.

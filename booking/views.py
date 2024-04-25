@@ -86,7 +86,7 @@ class StripeCheckout(APIView):
         user_id = request.data.get("user_id")
         slot_id = request.data.get("slot_id")
         shift = request.data.get("shift")
-        print(shift,"in stripe check")
+        print(shift, "in stripe check")
 
         # product_name = dataDict['product_name'][0]
         try:
@@ -161,7 +161,7 @@ def handle_payment(payment_intent):
     print("arrived in booking creation")
     user_id = payment_intent["metadata"]["user_id"]
     slot_id = payment_intent["metadata"]["slot_id"]
-    shift = payment_intent['metadata']['shift']
+    shift = payment_intent["metadata"]["shift"]
     print(user_id, "id of user")
     print(slot_id, "id of slot")
     payment_id = payment_intent["id"]
@@ -183,7 +183,7 @@ def handle_payment(payment_intent):
         date=slot.date,
         payment_id=payment_id,
         amount_paid=amount_paid,
-        status="suceessfull",
+        status="confirmed",
     )
     booking.save()
     print("booking instance created", booking.id)
@@ -191,7 +191,7 @@ def handle_payment(payment_intent):
 
 
 @api_view(["GET"])
-def bookings(request):
+def booking_details(request):
     user_id = request.query_params.get("userId")
     print(user_id, "why")
     try:
@@ -212,6 +212,29 @@ def bookings(request):
             },
             status=status.HTTP_200_OK,
         )
+    except Booking.DoesNotExist:
+        return Response(
+            {"message": "No bookings found for the user"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+
+@api_view(["GET"])
+def bookings(request):
+    user_id = request.query_params.get("userId")
+    print(user_id, "why")
+
+    # By default, if include_associate query parameter is not provided or set to true,
+    # the slot data will be included
+    include_associate = request.query_params.get("include_associate", "true").lower() == "true"
+
+    try:
+        bookings = Booking.objects.filter(user=user_id)
+        booking_serializer = BookingSerializer(
+            bookings, many=True, context={"include_associate": include_associate}
+        )
+        booking_data = booking_serializer.data
+        return Response({"booking": booking_data}, status=status.HTTP_200_OK)
     except Booking.DoesNotExist:
         return Response(
             {"message": "No bookings found for the user"},
