@@ -82,6 +82,13 @@ class RegisterView(APIView):
         password = request.data.get("password")
 
         print(email, password, "arrived")
+        user = User.objects.filter(email=email)
+        if user:
+            print("user exists")
+            return Response(
+                {"message": "Email is already registered"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         otp = pyotp.TOTP(pyotp.random_base32()).now()
 
@@ -270,9 +277,10 @@ class UserResetPasswordView(APIView):
             return Response(
                 {"message": "Email does not exist"}, status=status.HTTP_404_NOT_FOUND
             )
+
     def patch(self, request):
-        temp_id = request.data.get('tempId')
-        password = request.data.get('password')
+        temp_id = request.data.get("tempId")
+        password = request.data.get("password")
 
         try:
             instance = Temp.objects.get(temp_id=temp_id)
@@ -281,11 +289,19 @@ class UserResetPasswordView(APIView):
                 user = User.objects.get(email=email)
                 user.set_password(password)
                 user.save()
-                return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
+                return Response(
+                    {"message": "Password updated successfully"},
+                    status=status.HTTP_200_OK,
+                )
             except User.DoesNotExist:
-                return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                )
         except Temp.DoesNotExist:
-            return Response({'error': 'Temp ID not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Temp ID not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class OtpVerifyView(APIView):
     def post(self, request):
