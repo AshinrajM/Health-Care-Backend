@@ -22,7 +22,8 @@ class AvailableView(APIView):
         if associate_id:
             availabilities = Available.objects.filter(associate=associate_id)
         else:
-            availabilities = Available.objects.all()
+            # this query will exclude instances which are also in booking
+            availabilities = Available.objects.exclude(booking__isnull=False)
         serializer = AvailableSerializer(availabilities, many=True)
         for data in serializer.data:
             associate_id = data[
@@ -226,7 +227,9 @@ def bookings(request):
 
     # By default, if include_associate query parameter is not provided or set to true,
     # the slot data will be included
-    include_associate = request.query_params.get("include_associate", "true").lower() == "true"
+    include_associate = (
+        request.query_params.get("include_associate", "true").lower() == "true"
+    )
 
     try:
         bookings = Booking.objects.filter(user=user_id)
@@ -240,3 +243,22 @@ def bookings(request):
             {"message": "No bookings found for the user"},
             status=status.HTTP_404_NOT_FOUND,
         )
+
+
+class Booking_view(APIView):
+    def get(self, request):
+        associate_id = request.query_params.get("associateId")
+        print(associate_id, "working")
+        if associate_id:
+            try:
+                bookings = Booking.objects.filter(
+                    slot__associate_id=associate_id
+                ).select_related("user")
+                print("bookinfs", bookings)
+                serializer = AssociateBookings(bookings, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Booking.DoesNotExist:
+                return Response(
+                    {"message": "No bookings found for the Associate"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
