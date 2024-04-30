@@ -254,11 +254,21 @@ class Booking_view(APIView):
                 bookings = Booking.objects.filter(
                     slot__associate_id=associate_id
                 ).select_related("user")
-                print("bookinfs", bookings)
+                # print("bookinfs", bookings)
                 serializer = AssociateBookings(bookings, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Booking.DoesNotExist:
                 return Response(
                     {"message": "No bookings found for the Associate"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            try:
+                bookings = Booking.objects.all().select_related("user")
+                serializer = AssociateBookings(bookings, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Booking.DoesNotExist:
+                return Response(
+                    {"message": "No bookings found"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
