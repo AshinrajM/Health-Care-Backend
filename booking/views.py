@@ -264,7 +264,9 @@ class Booking_view(APIView):
                 )
         else:
             try:
-                bookings = Booking.objects.all().select_related("user")
+                bookings = Booking.objects.all().select_related(
+                    "user", "slot__associate"
+                )
                 serializer = AssociateBookings(bookings, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Booking.DoesNotExist:

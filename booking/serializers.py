@@ -26,6 +26,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
 class AssociateBookings(serializers.ModelSerializer):
     user_email = serializers.CharField(source="user.email", read_only=True)
+    associate_name = serializers.CharField(source="slot.associate.name", read_only=True)
 
     class Meta:
         model = Booking
@@ -38,6 +39,7 @@ class AssociateBookings(serializers.ModelSerializer):
             "shift",
             "created_at",
             "user_email",
+            "associate_name",
             "user",
         ]
 
