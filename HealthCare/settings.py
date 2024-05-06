@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "channels",
     "accounts",
     "booking",
+    "chat",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
