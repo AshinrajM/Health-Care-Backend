@@ -241,6 +241,7 @@ def booking_details(request):
         )
 
 
+# booking history - user
 @api_view(["GET"])
 def bookings(request):
     user_id = request.query_params.get("userId")
@@ -265,7 +266,8 @@ def bookings(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-#associate
+
+# associate
 class Booking_view(APIView):
     def get(self, request):
         associate_id = request.query_params.get("associateId")
