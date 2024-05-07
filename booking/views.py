@@ -15,15 +15,35 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
+@api_view(["GET"])
+# user side
+def Available_List(request):
+    availabilities = Available.objects.exclude(booking__isnull=False)
+    serializer = AvailableSerializer(availabilities, many=True)
+    serializer = AvailableSerializer(availabilities, many=True)
+    for data in serializer.data:
+        associate_id = data[
+            "associate"
+        ]  # Assuming associate_id is present in the serializer data
+        associate_instance = Associate.objects.get(id=associate_id)
+        associate_serializer = AssociateSerializer(associate_instance)
+        data["associate"] = associate_serializer.data
+        print(serializer.data, "check else section")
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class AvailableView(APIView):
+    # associate - schedules on associate side
     def get(self, request):
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
         if associate_id:
             availabilities = Available.objects.filter(associate=associate_id)
-        else:
-            # this query will exclude instances which are also in booking
-            availabilities = Available.objects.exclude(booking__isnull=False)
+        # else:
+        #     # this query will exclude instances which are also in booking
+        #     print("else in slot check")
+        #     availabilities = Available.objects.exclude(booking__isnull=False)
+        #     print(availabilities, "show datas")
         serializer = AvailableSerializer(availabilities, many=True)
         for data in serializer.data:
             associate_id = data[
@@ -32,7 +52,8 @@ class AvailableView(APIView):
             associate_instance = Associate.objects.get(id=associate_id)
             associate_serializer = AssociateSerializer(associate_instance)
             data["associate"] = associate_serializer.data
-        return Response(serializer.data)
+            print(serializer.data, "check else section")
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         print("date", request.data.get("date"))
@@ -244,7 +265,7 @@ def bookings(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-
+#associate
 class Booking_view(APIView):
     def get(self, request):
         associate_id = request.query_params.get("associateId")
@@ -262,15 +283,16 @@ class Booking_view(APIView):
                     {"message": "No bookings found for the Associate"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-        else:
-            try:
-                bookings = Booking.objects.all().select_related(
-                    "user", "slot__associate"
-                )
-                serializer = AssociateBookings(bookings, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except Booking.DoesNotExist:
-                return Response(
-                    {"message": "No bookings found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+
+
+@api_view(["GET"])
+def booking_list(request):
+    try:
+        bookings = Booking.objects.all().select_related("user", "slot__associate")
+        serializer = AssociateBookings(bookings, many=True)
+        print("booking list working")
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Booking.DoesNotExist:
+        return Response(
+            {"message": "No bookings found"}, status=status.HTTP_404_NOT_FOUND
+        )

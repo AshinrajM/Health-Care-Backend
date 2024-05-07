@@ -7,7 +7,8 @@ class AvailableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Available
-        fields = ["id", "associate", "date", "is_morning", "is_noon"]
+        # fields = ["id", "associate", "date", "is_morning", "is_noon"]
+        fields = "__all__"
 
 
 class BookingSerializer(serializers.ModelSerializer):
