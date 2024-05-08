@@ -9,8 +9,11 @@ class Chatroom_consumer(WebsocketConsumer):
 
     def connect(self):
         self.accept()
-        print("connected")
-        self.send(text_data=json.dumps({"message": "WebSocket Connection Successful!"}))
+        self.user = self.scope['user']
+        self.chatroom_name = self.scope['url_route']['kwargs']['chatroom_name']
+        
+        # print("connected")
+        # self.send(text_data=json.dumps({"message": "WebSocket Connection Successful!"}))
 
     def disconnect(self, close_code):
         pass
