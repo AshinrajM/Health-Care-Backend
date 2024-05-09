@@ -17,3 +17,6 @@ class Chat(models.Model):
 
     def __str__(self) -> str:
         return f"{self.sender} - {self.receiver}"
+
+    class Meta:
+        ordering = ["-created"]
