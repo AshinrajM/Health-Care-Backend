@@ -2,17 +2,26 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from accounts.models import User
+from accounts.models import *
 from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
- 
-# @login_required
+
+
 @api_view(["GET"])
-def check(request):
-    # user_id = request.user.id
-    # print("id", user_id)
-    # # user = User.objects.get(id=user_id)
-    # # print("user name", user.email)
-    return Response({"message": "checking chat app"}, status=status.HTTP_200_OK)
+def identify(request):
+    role = request.query_params.get("role")
+    id = request.query_params.get("userId")
+    print(role, "see role")
+    print(id, "id from params")
+    if role == "user":
+        try:
+            user = User.objects.get(id=id)
+            print(user.email, "user got")
+            receiver = user.email.split("@")[0]
+            print(receiver, "name of the opposite person")
+        except Associate.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    # return Response(status=status.HTTP_200_OK)
