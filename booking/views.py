@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.conf import settings
 from django.http import JsonResponse
-
+from decimal import Decimal
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
@@ -285,6 +285,27 @@ class Booking_view(APIView):
                     {"message": "No bookings found for the Associate"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+
+    def patch(self, request):
+        bookingId = request.data.get("bookingId")
+        updated_status = request.data.get("updatedStatus")
+        print("update of status", bookingId, ",", updated_status)
+
+        try:
+            booking = Booking.objects.get(booking_id=bookingId)
+            print(booking.slot.associate.user, "checking associate")
+            associateUser = booking.slot.associate.user
+            associate_share = booking.amount_paid * Decimal("0.6")
+            print(associate_share, "fee ")
+            associateUser.wallet += associate_share
+            associateUser.save()
+            booking.status = updated_status
+            booking.save()
+            return Response({"message": "updated booking"}, status=status.HTTP_200_OK)
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "booking doesnt exist"}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 @api_view(["GET"])

@@ -16,4 +16,5 @@ urlpatterns = [
         name="reset_password",
     ),
     path("reset-verify-otp", OtpVerifyView.as_view(), name="reset_verify_otp"),
+    path("get-user", get_user, name="get_user"),
 ]

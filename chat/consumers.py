@@ -28,13 +28,17 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-    def disconnect(self, close_code):
+    async def disconnect(self, close_code):
         print("disconnected")
         print("disconnected")
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        await super().disconnect(code)
+
 
     async def receive(self, text_data):
+
         text_data_json = json.loads(text_data)
-        body = text_data_json["body"]  # the body is the message in the data base
+        text = text_data_json["text"]  
         sender = text_data_json["sender"]
         recipient_id = self.room_name.split("_")[1]
         chat_message = await self.save_chat_message(text, sender, recipient_id)
@@ -86,7 +90,8 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
         messages = []
 
         for instance in Chat.objects.filter(
-            sender__in=[sender, recipient_id], receiver__in=[sender, recipient_id]):
+            sender__in=[sender, recipient_id], receiver__in=[sender, recipient_id]
+        ):
             messages = ChatSerializer(instance).data
 
         return messages

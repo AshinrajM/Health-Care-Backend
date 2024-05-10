@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,6 +12,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
+
 import pyotp
 
 
@@ -316,3 +318,19 @@ class OtpVerifyView(APIView):
             return Response(
                 {"message": "Otp is not valid"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+@api_view(["GET"])
+def get_user(request):
+    user_id = request.query_params.get("userId")
+
+    try:
+        user = User.objects.get(id=user_id)
+        serializer = UserSerializer(user)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response(
+            {"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND
+        )
