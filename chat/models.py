@@ -19,4 +19,4 @@ class Chat(models.Model):
         ordering = ["-created"]
 
     def __str__(self) -> str:
-        return f"{self.sender} - {self.receiver}"
+        return f"{self.author} - {self.receiver}"

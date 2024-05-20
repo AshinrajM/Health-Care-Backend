@@ -10,4 +10,5 @@ urlpatterns = [
     path("bookings", bookings, name="bookings"),
     path("associate-booking", Booking_view.as_view(), name="associate_booking"),
     path("booking-list/", booking_list, name="booking_list"),
+    path("cancel-booking/", cancel_booking, name="cancel_booking"),
 ]

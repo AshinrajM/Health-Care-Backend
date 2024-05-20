@@ -12,7 +12,6 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
-
 import pyotp
 
 

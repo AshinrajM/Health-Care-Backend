@@ -1,4 +1,14 @@
 from .models import *
+from .serializer import *
+from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
+
+
+class UserChatSeralizer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id']
+
 
 
 class ChatSerializer(ModelSerializer):
@@ -7,4 +17,4 @@ class ChatSerializer(ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ["id", "sender", "receiver", "message", "date", "is_read"]
+        fields = ["id", "sender", "receiver", "message", "is_read"]

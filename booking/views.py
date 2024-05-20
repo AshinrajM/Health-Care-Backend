@@ -319,3 +319,31 @@ def booking_list(request):
         return Response(
             {"message": "No bookings found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(["PATCH"])
+def cancel_booking(request):
+    booking_id = request.data.get("bookingId")
+    user_id = request.data.get("userId")
+
+    print(booking_id,user_id,"received datas")
+
+    try:
+        booking = Booking.objects.get(booking_id=booking_id)
+        user = User.objects.get(id=user_id)
+        booking.status = "cancelled"
+        booking.save()
+        cancel_charge = booking.amount_paid * Decimal("0.1")
+        refund_amount = booking.amount_paid - cancel_charge
+        user.wallet += refund_amount
+        user.save()
+        return Response({'message':'booking cancelled successfully'},status=status.HTTP_200_OK)
+    except (Booking.DoesNotExist, User.DoesNotExist) as e:
+        return Response({"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        
+        # if isinstance(e, Booking.DoesNotExist):
+        # else:
+        #     return JsonResponse(
+        #         {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+        #     )
