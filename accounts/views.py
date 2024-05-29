@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.decorators import api_view
 from .serializers import *
 from rest_framework.response import Response
@@ -55,7 +56,7 @@ class UsersManageView(APIView):
             else:
                 print("didnt changed password")
                 return Response(
-                    {"error": "Invalid current password."},
+                    {"message": "Invalid current password."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -187,6 +188,11 @@ class RegisterAssociateView(APIView):
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
 
+class GoogleSignUp(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
 class UserLoginView(APIView):
     def post(self, request):
         email = request.data.get("email")
@@ -254,6 +260,11 @@ class UserResetPasswordView(APIView):
             )
         try:
             user = User.objects.get(email=email)
+            if user.is_google:
+                return Response(
+                    {"message": "Try log in using google signin"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             serializer = UserSerializer(user)
             otp = pyotp.TOTP(pyotp.random_base32()).now()
             temp_id = f"{email}_{otp}"

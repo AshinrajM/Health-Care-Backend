@@ -4,10 +4,17 @@ from datetime import date
 
 
 class Available(models.Model):
+
+    STATUS_CHOICES = [
+        ("active", "active"),
+        ("booked", "booked"),
+    ]
+
     associate = models.ForeignKey(Associate, on_delete=models.CASCADE)
     date = models.DateField()
     is_morning = models.BooleanField(default=False)
     is_noon = models.BooleanField(default=False)
+    status = models.CharField(max_length=100,choices=STATUS_CHOICES,default="active")   
 
 
 class Booking(models.Model):
@@ -35,11 +42,20 @@ class Booking(models.Model):
     )
     shift = models.CharField(max_length=20, blank=True, null=True, default="morning")
     created_at = models.DateField(auto_now_add=True)
+
     def save(self, *args, **kwargs):
-        if not self.pk:  # If the instance is being saved for the first time (i.e., it doesn't have a primary key)
-            last_booking = Booking.objects.order_by('-id').first()  # Retrieve the last booking object based on its ID
+        if (
+            not self.pk
+        ):  # If the instance is being saved for the first time (i.e., it doesn't have a primary key)
+            last_booking = Booking.objects.order_by(
+                "-id"
+            ).first()  # Retrieve the last booking object based on its ID
             if last_booking:  # If there are existing bookings
-                last_id = int(last_booking.booking_id[2:])  # Extract the numerical part of the last booking's ID
-                new_id = f'HC{str(last_id + 1).zfill(4)}'  # Increment the numerical part and format it with leading zeros
+                last_id = int(
+                    last_booking.booking_id[2:]
+                )  # Extract the numerical part of the last booking's ID
+                new_id = f"HC{str(last_id + 1).zfill(4)}"  # Increment the numerical part and format it with leading zeros
                 self.booking_id = new_id  # Assign the newly generated booking ID to the current instance
-        super().save(*args, **kwargs)  # Call the superclass's save method to actually save the instance
+        super().save(
+            *args, **kwargs
+        )  # Call the superclass's save method to actually save the instance

@@ -38,6 +38,8 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
         text_data_json = json.loads(text_data)
         text = text_data_json["text"]
 
+        print(text, "text")
+
         sender_id = self.room_name.split("_")[0]
         recipient_id = self.room_name.split("_")[1]
         chat_message = await self.save_chat_message(text, sender_id, recipient_id)
@@ -48,12 +50,14 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
         messages = await self.get_messages(sender_id, recipient_id)
 
         # here chat_message method will be send to the group and later it will be triggered
+        print("working/......................")
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "chat_message",
                 "messages": messages,
                 "sender": sender_id,
+                "receiver": recipient_id,
                 "message": text,
             },
         )
@@ -72,10 +76,17 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
         return messages
 
     async def chat_message(self, event):
+        print("22")
+        print("22")
+        print("")
+        print("")
+        print("")
         messages = event["messages"]
         sender = event["sender"]
         message = event["message"]
+        receiver = event["receiver"]
 
+        # print(messages, message, sender, receiver, "tet")
         await self.send(
             text_data=json.dumps(
                 {
@@ -85,6 +96,22 @@ class Chatroom_consumer(AsyncJsonWebsocketConsumer):
                 }
             )
         )
+
+        # message_data = {
+        #     "messages": messages,
+        #     "message": message,
+        #     "sender": sender,
+        #     "receiver": receiver,
+        #     # Add any additional data you want to send
+        # }
+
+        # print(message, "me")
+
+        # Encode the message data as JSON
+        # json_data = json.dumps(message_data)
+
+        # Send the JSON data over the WebSocket
+        # await self.send(json_data)
 
     @database_sync_to_async
     def save_chat_message(self, message, sender_id, recipient_id):

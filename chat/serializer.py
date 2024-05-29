@@ -17,4 +17,4 @@ class ChatSerializer(ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ["id", "sender", "receiver", "message", "is_read"]
+        fields = ["id", "sender", "receiver", "message",'created', "is_read"]

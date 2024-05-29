@@ -16,9 +16,48 @@ webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
 @api_view(["GET"])
+def available_associates(request):
+    # Query Available instances where either morning or noon slot is available
+    available_slots = Available.objects.filter(
+        Q(is_morning=True) | Q(is_noon=True)
+    ).select_related("associate")
+
+    # Prepare a dictionary to group slots by associate
+    associates_dict = {}
+
+    for slot in available_slots:
+        associate = slot.associate
+        if associate.id not in associates_dict:
+            associates_dict[associate.id] = {
+                "name": associate.name,
+                "age": associate.age,
+                "experience": associate.experience,
+                "certificate_no": associate.certificate_no,
+                "fee_per_hour": associate.fee_per_hour,
+                "phone": associate.phone,
+                "description": associate.description,
+                "slots": [],
+            }
+
+        associates_dict[associate.id]["slots"].append(
+            {
+                "date": slot.date,
+                "is_morning": slot.is_morning,
+                "is_noon": slot.is_noon,
+            }
+        )
+
+    # Convert the dictionary to a list of associates
+    data = list(associates_dict.values())
+
+    # Return JSON response
+    return JsonResponse(data, safe=False)
+
+
+@api_view(["GET"])
 # user side
 def Available_List(request):
-    availabilities = Available.objects.exclude(booking__isnull=False)
+    availabilities = Available.objects.exclude(booking__isnull=False).order_by("date")
     serializer = AvailableSerializer(availabilities, many=True)
     serializer = AvailableSerializer(availabilities, many=True)
     for data in serializer.data:
@@ -254,7 +293,7 @@ def bookings(request):
     )
 
     try:
-        bookings = Booking.objects.filter(user=user_id)
+        bookings = Booking.objects.filter(user=user_id).order_by("-created_at")
         booking_serializer = BookingSerializer(
             bookings, many=True, context={"include_associate": include_associate}
         )
@@ -325,8 +364,7 @@ def booking_list(request):
 def cancel_booking(request):
     booking_id = request.data.get("bookingId")
     user_id = request.data.get("userId")
-
-    print(booking_id,user_id,"received datas")
+    print(booking_id, user_id, "received datas")
 
     try:
         booking = Booking.objects.get(booking_id=booking_id)
@@ -337,13 +375,10 @@ def cancel_booking(request):
         refund_amount = booking.amount_paid - cancel_charge
         user.wallet += refund_amount
         user.save()
-        return Response({'message':'booking cancelled successfully'},status=status.HTTP_200_OK)
+        return Response(
+            {"message": "booking cancelled successfully"}, status=status.HTTP_200_OK
+        )
     except (Booking.DoesNotExist, User.DoesNotExist) as e:
-        return Response({"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        
-        # if isinstance(e, Booking.DoesNotExist):
-        # else:
-        #     return JsonResponse(
-        #         {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-        #     )
+        return Response(
+            {"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND
+        )

@@ -3,18 +3,29 @@ from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = "__all__"
         extra_kwargs = {"password": {"write_only": True}}
 
+    def create(self, validated_data):
+        # Remove password from validated_data before creating the user
+        password = validated_data.pop("password", None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+            user.is_google = True
+        user.save()
+        return user
 
     def update(self, user, validated_data):
-
         fields_to_update = ["date_of_birth", "location", "profile_picture"]
         for field_name in fields_to_update:
             field_value = validated_data.get(field_name)
-            if field_value is not None:  # Check if the field is provided in validated_data
+            if (
+                field_value is not None
+            ):  # Check if the field is provided in validated_data
                 setattr(user, field_name, field_value)
 
         user.save()
@@ -80,4 +91,3 @@ class UserLoginSerializer(serializers.Serializer):
                 return data
             raise serializers.ValidationError("invalid user credentials")
         raise serializers.ValidationError("Both fields are required")
-

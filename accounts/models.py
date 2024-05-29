@@ -1,9 +1,11 @@
+import threading
 from django.db import models
 from django.contrib.auth.models import (
     BaseUserManager,
     AbstractBaseUser,
     PermissionsMixin,
 )
+
 
 
 class CustomUserManager(BaseUserManager):
@@ -70,3 +72,18 @@ class Temp(models.Model):
     email = models.EmailField()
     password = models.CharField(max_length=100)
     otp = models.CharField(max_length=6)
+
+    def delete_after_delay(self,delay):
+        def delete_temp():
+            try:
+                obj = Temp.objects.get(pk=self.pk)
+                obj.delete()
+                print(f'Temp object with ID {self.pk} has been deleted after {delay} seconds.')
+            except ObjectDoesNotExist:
+                print(f'Temp object with ID {self.pk} does not exist.')
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Schedule the deletion of the Temp object after 3 minutes (180 seconds)
+        self.delete_after_delay(200)
+

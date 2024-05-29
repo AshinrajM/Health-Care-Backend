@@ -3,6 +3,7 @@ from .views import *
 
 urlpatterns = [
     path("register", RegisterView.as_view(), name="register"),
+    path("google-signup", GoogleSignUp.as_view(), name="google_signup"),
     path("verify", VerifyView.as_view(), name="verify"),
     path("login", UserLoginView.as_view(), name="login"),
     path(
