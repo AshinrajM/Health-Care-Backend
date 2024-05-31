@@ -15,43 +15,92 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
+# @api_view(["GET"])
+# def available_associates(request):
+#     # Query Available instances where either morning or noon slot is available
+#     available_slots = Available.objects.filter(Q(status="active")).select_related(
+#         "associate"
+#     )
+#     associates_dict = {}
+
+#     for slot in available_slots:
+#         associate = slot.associate
+#         if associate.id not in associates_dict:
+#             associates_dict[associate.id] = {
+#                 "id": associate.id,
+#                 "name": associate.name,
+#                 "age": associate.age,
+#                 "experience": associate.experience,
+#                 "certificate_no": associate.certificate_no,
+#                 "fee_per_hour": associate.fee_per_hour,
+#                 "phone": associate.phone,
+#                 "description": associate.description,
+#                 "slots": [],
+#             }
+
+#         associates_dict[associate.id]["slots"].append(
+#             {
+#                 "id": slot.id,
+#                 "date": slot.date,
+#                 "is_morning": slot.is_morning,
+#                 "is_noon": slot.is_noon,
+#                 "status": slot.status,
+#             }
+#         )
+
+#     # Convert the dictionary to a list of associates
+#     data = list(associates_dict.values())
+#     # Return JSON response
+#     return JsonResponse(data, safe=False)
+
+
 @api_view(["GET"])
 def available_associates(request):
-    # Query Available instances where either morning or noon slot is available
-    available_slots = Available.objects.filter(
-        Q(is_morning=True) | Q(is_noon=True)
-    ).select_related("associate")
-
-    # Prepare a dictionary to group slots by associate
-    associates_dict = {}
-
-    for slot in available_slots:
-        associate = slot.associate
-        if associate.id not in associates_dict:
-            associates_dict[associate.id] = {
-                "name": associate.name,
-                "age": associate.age,
-                "experience": associate.experience,
-                "certificate_no": associate.certificate_no,
-                "fee_per_hour": associate.fee_per_hour,
-                "phone": associate.phone,
-                "description": associate.description,
-                "slots": [],
-            }
-
-        associates_dict[associate.id]["slots"].append(
-            {
-                "date": slot.date,
-                "is_morning": slot.is_morning,
-                "is_noon": slot.is_noon,
-            }
+    try:
+        # Query Available instances where either morning or noon slot is available
+        available_slots = Available.objects.filter(Q(status="active")).select_related(
+            "associate"
         )
+        associates_dict = {}
 
-    # Convert the dictionary to a list of associates
-    data = list(associates_dict.values())
+        for slot in available_slots:
+            associate = slot.associate
+            if associate.id not in associates_dict:
+                associates_dict[associate.id] = {
+                    "id": associate.id,
+                    "name": associate.name,
+                    "age": associate.age,
+                    "experience": associate.experience,
+                    "certificate_no": associate.certificate_no,
+                    "fee_per_hour": associate.fee_per_hour,
+                    "phone": associate.phone,
+                    "description": associate.description,
+                    "slots": [],
+                }
 
-    # Return JSON response
-    return JsonResponse(data, safe=False)
+            associates_dict[associate.id]["slots"].append(
+                {
+                    "id": slot.id,
+                    "date": slot.date,
+                    "is_morning": slot.is_morning,
+                    "is_noon": slot.is_noon,
+                    "status": slot.status,
+                }
+            )
+
+        # Convert the dictionary to a list of associates
+        data = list(associates_dict.values())
+
+        # Return JSON response
+        return Response(data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        # Handle the case where there are no available associates
+        # return JsonResponse([], safe=False)
+        return Response(
+            {"message": "Associates with slots doesnt exist"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 @api_view(["GET"])
@@ -147,7 +196,9 @@ class StripeCheckout(APIView):
         user_id = request.data.get("user_id")
         slot_id = request.data.get("slot_id")
         shift = request.data.get("shift")
+        location = request.data.get("location")
         print(shift, "in stripe check")
+        print(location, "in stripe check")
 
         # product_name = dataDict['product_name'][0]
         try:
@@ -169,7 +220,12 @@ class StripeCheckout(APIView):
                 cancel_url="http://localhost:3000/secured/failed",
                 billing_address_collection="required",
                 payment_intent_data={
-                    "metadata": {"user_id": user_id, "slot_id": slot_id, "shift": shift}
+                    "metadata": {
+                        "user_id": user_id,
+                        "slot_id": slot_id,
+                        "shift": shift,
+                        "location": location,
+                    }
                 },
             )
             print(checkout_session.url, "url")
@@ -223,6 +279,7 @@ def handle_payment(payment_intent):
     user_id = payment_intent["metadata"]["user_id"]
     slot_id = payment_intent["metadata"]["slot_id"]
     shift = payment_intent["metadata"]["shift"]
+    location = payment_intent["metadata"]["location"]
     print(user_id, "id of user")
     print(slot_id, "id of slot")
     payment_id = payment_intent["id"]
@@ -244,9 +301,12 @@ def handle_payment(payment_intent):
         date=slot.date,
         payment_id=payment_id,
         amount_paid=amount_paid,
+        location=location,
         status="confirmed",
     )
     booking.save()
+    slot.status = "booked"
+    slot.save()
     print("booking instance created", booking.id)
     print("booking instance created", booking.created_at)
 
@@ -257,7 +317,7 @@ def booking_details(request):
     print(user_id, "why")
     try:
         bookings = Booking.objects.filter(user=user_id).order_by("-id").first()
-        print(bookings.slot)
+        # print(bookings.slot)
         print(bookings.slot.associate.name, "name of associate")
         associate_name = bookings.slot.associate.name
         booking_serializer = BookingSerializer(bookings)

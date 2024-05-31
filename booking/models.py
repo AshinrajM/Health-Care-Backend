@@ -14,7 +14,7 @@ class Available(models.Model):
     date = models.DateField()
     is_morning = models.BooleanField(default=False)
     is_noon = models.BooleanField(default=False)
-    status = models.CharField(max_length=100,choices=STATUS_CHOICES,default="active")   
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES, default="active")
 
 
 class Booking(models.Model):
@@ -32,7 +32,7 @@ class Booking(models.Model):
         max_digits=10, decimal_places=2, blank=True, null=True
     )
     date = models.DateField(default=date(2024, 12, 2))
-    # status = models.CharField(max_length=100, blank=True, null=True)
+
     status = models.CharField(
         max_length=100,
         choices=STATUS_CHOICES,
@@ -42,6 +42,7 @@ class Booking(models.Model):
     )
     shift = models.CharField(max_length=20, blank=True, null=True, default="morning")
     created_at = models.DateField(auto_now_add=True)
+    location = models.CharField(max_length=200, blank=True, null=True, default="kochi")
 
     def save(self, *args, **kwargs):
         if (
