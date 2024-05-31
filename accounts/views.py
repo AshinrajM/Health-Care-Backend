@@ -224,6 +224,7 @@ class UserLoginView(APIView):
             data["user"] = user_data
 
             if role == "associate":
+                print("checking associate login ")
                 associate = Associate.objects.get(user=user)
                 associate_data = AssociateSerializer(associate).data
                 data["associate"] = associate_data
@@ -237,6 +238,10 @@ class UserLoginView(APIView):
                 print(user, "Check User")
                 if user:
                     print(user, "exists")
+                    return Response(
+                        {"detail": "Check password"},
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
                 else:
                     print("user doesmt exist")
                 # If the email exists but the password is incorrect, return a custom message
@@ -246,7 +251,7 @@ class UserLoginView(APIView):
             except User.DoesNotExist:
                 # If the email does not exist, return a generic error message
                 return Response(
-                    {"detail": "Invalid email or password"},
+                    {"detail": "Invalid Email "},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 

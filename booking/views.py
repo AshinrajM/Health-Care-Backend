@@ -186,7 +186,15 @@ class AvailableView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # def delete(self,request):
+    def delete(self, request):
+        slot_id = request.query_params.get("slotId")
+        try:
+            slot = Available.objects.get(id=slot_id)
+            slot.delete()
+            return Response(status=status.HTTP_200_OK)
+        except Available.DoesNotExist:
+            return Response(
+                {"message": "No Slots found "}, status=status.HTTP_404_NOT_FOUND)
 
 
 class StripeCheckout(APIView):
