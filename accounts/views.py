@@ -7,6 +7,9 @@ from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated
 from .models import *
+from booking.models import *
+from booking.serializers import *
+from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
@@ -342,8 +345,22 @@ def get_user(request):
     try:
         user = User.objects.get(id=user_id)
         serializer = UserSerializer(user)
+        if user.is_associate:
+            available_slots = Available.objects.filter(
+                Q(associate__user=user) & Q(status="active")
+            )
+            available_serializer = AvailableSerializer(available_slots, many=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            bookings_count = Booking.objects.filter(
+                Q(slot__associate__user=user) & Q(status="confirmed")
+            ).count()
+
+        combined_data = {
+            "user": serializer.data,
+            "available_slots": available_serializer.data,
+            "count": bookings_count,
+        }
+        return Response(combined_data, status=status.HTTP_200_OK)
 
     except User.DoesNotExist:
         return Response(

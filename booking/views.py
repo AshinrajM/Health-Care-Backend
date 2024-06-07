@@ -253,7 +253,6 @@ class Webhook(APIView):
         event = None
         payload = request.body
         sig_header = request.META["HTTP_STRIPE_SIGNATURE"]
-
         print("webhook")
         print(webhook_secret)
         print(sig_header)

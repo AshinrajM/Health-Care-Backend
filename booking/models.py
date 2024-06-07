@@ -1,6 +1,8 @@
 from django.db import models
 from accounts.models import Associate, User
 from datetime import date
+from django.utils import timezone
+from threading import Timer
 
 
 class Available(models.Model):
@@ -15,6 +17,23 @@ class Available(models.Model):
     is_morning = models.BooleanField(default=False)
     is_noon = models.BooleanField(default=False)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES, default="active")
+
+    def delete_on_date(self, delay):
+        def delete_instance():
+            try:
+                obj = Available.objects.get(pk=self.pk)
+                if obj.date == timezone.now().date() and obj.status != "booked":
+                    obj.delete()
+                    print(f"Available object with ID {self.pk} has been deleted on {obj.date}.")
+                else:
+                    if obj.status == "booked":
+                        print(f"Available object with ID {self.pk} is booked and cannot be deleted.")
+                    else:
+                        print(f"Available object with ID {self.pk} is not due for deletion today.")
+            except Available.DoesNotExist:
+                print(f"Available object with ID {self.pk} does not exist.")
+
+        Timer(delay, delete_instance).start()
 
 
 class Booking(models.Model):
