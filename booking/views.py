@@ -1,15 +1,18 @@
 import stripe
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-from rest_framework import generics
+from rest_framework.decorators import api_view, action
+from rest_framework import generics, viewsets
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncMonth
 from django.conf import settings
 from django.http import JsonResponse
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
+from django.utils import timezone
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
@@ -194,12 +197,13 @@ class AvailableView(APIView):
             return Response(status=status.HTTP_200_OK)
         except Available.DoesNotExist:
             return Response(
-                {"message": "No Slots found "}, status=status.HTTP_404_NOT_FOUND)
+                {"message": "No Slots found "}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class StripeCheckout(APIView):
     def post(self, request):
-        print(request.data)
+        print(request.data, "testing data")
         price = request.data.get("payable_amount")
         user_id = request.data.get("user_id")
         slot_id = request.data.get("slot_id")
@@ -324,7 +328,7 @@ def booking_details(request):
     print(user_id, "why")
     try:
         bookings = Booking.objects.filter(user=user_id).order_by("-id").first()
-        # print(bookings.slot)
+        print(bookings.slot, "slot daataas")
         print(bookings.slot.associate.name, "name of associate")
         associate_name = bookings.slot.associate.name
         booking_serializer = BookingSerializer(bookings)
@@ -435,17 +439,90 @@ def cancel_booking(request):
 
     try:
         booking = Booking.objects.get(booking_id=booking_id)
+        available_instance = booking.slot
+        print(available_instance.status, "check the slot", available_instance.status)
         user = User.objects.get(id=user_id)
-        booking.status = "cancelled"
-        booking.save()
-        cancel_charge = booking.amount_paid * Decimal("0.1")
-        refund_amount = booking.amount_paid - cancel_charge
-        user.wallet += refund_amount
-        user.save()
-        return Response(
-            {"message": "booking cancelled successfully"}, status=status.HTTP_200_OK
-        )
+
+        if booking.status != "confirmed":
+            return Response(
+                {"error": "Booking cannot be canceled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if booking.date == timezone.now().date():
+            return Response(
+                {"error": "You cannot cancel a booking on the same day."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment_intent = stripe.PaymentIntent.retrieve(booking.payment_id)
+
+        amount = booking.amount_paid - (booking.amount_paid * Decimal("0.2"))
+        amount = amount.quantize(Decimal("1."), rounding=ROUND_DOWN) * 100
+        # amount = amount.quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
+        print(amount, "amount to be refunded")
+
+        available_instance.status = "active"
+        available_instance.save()
+
+        refund = stripe.Refund.create(payment_intent=payment_intent, amount=amount)
+
+        if refund.status == "succeeded":
+            booking.status = "cancelled"
+            booking.save()
+            return Response(
+                {
+                    "success": "Booking cancelled and refund procedure initiated , the amount will be refunded with 5 days"
+                },
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"error": "Refund failed."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    except stripe.error.InvalidRequestError as e:
+        # Handle Stripe invalid request errors
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except (Booking.DoesNotExist, User.DoesNotExist) as e:
         return Response(
             {"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+class StatisticsView(APIView):
+
+    def get(self, request):
+        try:
+            total_associates = Associate.objects.count()
+            total_users = User.objects.filter(
+                Q(is_associate=False) & Q(is_superuser=False) & Q(is_staff=False)
+            ).count()
+
+            total_bookings = Booking.objects.count()
+            confirmed_bookings = Booking.objects.filter(status="confirmed").count()
+            completed_bookings = Booking.objects.filter(status="completed").count()
+            cancelled_bookings = Booking.objects.filter(status="cancelled").count()
+            monthly_bookings = (
+                Booking.objects.annotate(month=TruncMonth("created_at"))
+                .values("month")
+                .annotate(total=Count("id"))
+                .order_by("month")
+            )
+
+            data = {
+                "total_associates": total_associates,
+                "total_users": total_users,
+                "total_bookings": total_bookings,
+                "confirmed_bookings": confirmed_bookings,
+                "completed_bookings": completed_bookings,
+                "cancelled_bookings": cancelled_bookings,
+                "monthly_bookings": list(monthly_bookings),
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+        except (Booking.DoesNotExist, User.DoesNotExist) as e:
+            return Response(
+                {"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND
+            )

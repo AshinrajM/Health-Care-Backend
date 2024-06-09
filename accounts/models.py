@@ -62,7 +62,7 @@ class Associate(models.Model):
     )
     phone = models.CharField(max_length=12, null=True, blank=True)
     description = models.TextField(max_length=1000, null=True, blank=True)
-
+    is_active = models.BooleanField(default=True)
     def __str__(self):
         return self.name
 
