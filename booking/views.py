@@ -18,52 +18,13 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
-# @api_view(["GET"])
-# def available_associates(request):
-#     # Query Available instances where either morning or noon slot is available
-#     available_slots = Available.objects.filter(Q(status="active")).select_related(
-#         "associate"
-#     )
-#     associates_dict = {}
-
-#     for slot in available_slots:
-#         associate = slot.associate
-#         if associate.id not in associates_dict:
-#             associates_dict[associate.id] = {
-#                 "id": associate.id,
-#                 "name": associate.name,
-#                 "age": associate.age,
-#                 "experience": associate.experience,
-#                 "certificate_no": associate.certificate_no,
-#                 "fee_per_hour": associate.fee_per_hour,
-#                 "phone": associate.phone,
-#                 "description": associate.description,
-#                 "slots": [],
-#             }
-
-#         associates_dict[associate.id]["slots"].append(
-#             {
-#                 "id": slot.id,
-#                 "date": slot.date,
-#                 "is_morning": slot.is_morning,
-#                 "is_noon": slot.is_noon,
-#                 "status": slot.status,
-#             }
-#         )
-
-#     # Convert the dictionary to a list of associates
-#     data = list(associates_dict.values())
-#     # Return JSON response
-#     return JsonResponse(data, safe=False)
-
 
 @api_view(["GET"])
 def available_associates(request):
     try:
         # Query Available instances where either morning or noon slot is available
-        available_slots = Available.objects.filter(Q(status="active")).select_related(
-            "associate"
-        )
+        available_slots = Available.objects.filter(Q(status="active")).select_related("associate")
+
         associates_dict = {}
 
         for slot in available_slots:
@@ -130,11 +91,7 @@ class AvailableView(APIView):
         print(associate_id, "id received")
         if associate_id:
             availabilities = Available.objects.filter(associate=associate_id)
-        # else:
-        #     # this query will exclude instances which are also in booking
-        #     print("else in slot check")
-        #     availabilities = Available.objects.exclude(booking__isnull=False)
-        #     print(availabilities, "show datas")
+
         serializer = AvailableSerializer(availabilities, many=True)
         for data in serializer.data:
             associate_id = data[
@@ -458,7 +415,6 @@ def cancel_booking(request):
 
         amount = booking.amount_paid - (booking.amount_paid * Decimal("0.2"))
         amount = amount.quantize(Decimal("1."), rounding=ROUND_DOWN) * 100
-        # amount = amount.quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
         print(amount, "amount to be refunded")
 
         available_instance.status = "active"
