@@ -12,18 +12,19 @@ from django.conf import settings
 from django.http import JsonResponse
 from decimal import Decimal, ROUND_DOWN
 from django.utils import timezone
-
+from utils.mail_utils import send_notification_email
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
-
 
 
 @api_view(["GET"])
 def available_associates(request):
     try:
         # Query Available instances where either morning or noon slot is available
-        available_slots = Available.objects.filter(Q(status="active")).select_related("associate")
+        available_slots = Available.objects.filter(Q(status="active")).select_related(
+            "associate"
+        )
 
         associates_dict = {}
 
@@ -271,6 +272,24 @@ def handle_payment(payment_intent):
     booking.save()
     slot.status = "booked"
     slot.save()
+
+    subject = "Welcome to HealthCare, This is booking confirmation mail"
+    message_to_user = (
+        f"Hello {booking.user.email} your booking has been confirmed on {booking.date},\n"
+        f"Our person {booking.slot.associate.name} will be there on time to take care, Have a nice day"
+    )
+
+    message_to_associate = (
+        f"There is a booking on the date {booking.date}\n"
+        f"Be there on time make the user{booking.user.email} comfortable"
+    )
+    recipient_user = booking.user.email
+    recipient_associate = booking.slot.associate.user.email
+    print("mails", recipient_associate, recipient_user)
+
+    send_notification_email(subject, message_to_user, recipient_user)
+    send_notification_email(subject, message_to_associate, recipient_associate)
+
     print("booking instance created", booking.id)
     print("booking instance created", booking.created_at)
 
@@ -308,7 +327,7 @@ def booking_details(request):
 @api_view(["GET"])
 def bookings(request):
     user_id = request.query_params.get("userId")
-    print(user_id, "why")
+    print(user_id, "uderID")
 
     # By default, if include_associate query parameter is not provided or set to true,
     # the slot data will be included
@@ -317,7 +336,7 @@ def bookings(request):
     )
 
     try:
-        bookings = Booking.objects.filter(user=user_id).order_by("-created_at")
+        bookings = Booking.objects.filter(user=user_id).order_by("-id")
         booking_serializer = BookingSerializer(
             bookings, many=True, context={"include_associate": include_associate}
         )
@@ -421,9 +440,15 @@ def cancel_booking(request):
         if refund.status == "succeeded":
             booking.status = "cancelled"
             booking.save()
+
+            subject = "Welcome to HealthCare,  Booking cancelled "
+            message = f"Booking cancelled on {booking.date} and refund procedure initiated ,20% of the amount will be deducted and  the ₹{amount/100}.00 will be refunded within 5 days"
+            recipient = booking.user.email
+            send_notification_email(subject, message, recipient)
+
             return Response(
                 {
-                    "success": "Booking cancelled and refund procedure initiated , the amount will be refunded with 5 days"
+                    "success": "Booking cancelled, the amount will be refunded within 5 days"
                 },
                 status=status.HTTP_200_OK,
             )
