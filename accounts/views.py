@@ -16,6 +16,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
+from utils.mail_utils import send_notification_email
 import pyotp
 
 
@@ -101,9 +102,12 @@ class RegisterView(APIView):
 
         subject = "Welcome to HealthCare, This is the otp for your verification"
         message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification   is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
-        from_mail = settings.EMAIL_HOST_USER
+        # from_mail = settings.EMAIL_HOST_USER
         recipient_list = [email]
-        send_mail(subject, message, from_mail, recipient_list)
+
+        # send_mail(subject, message, from_mail, recipient_list)
+        send_notification_email(subject, message, recipient_list)
+
         temp_id = f"{email}_{otp}"
         temp = Temp(temp_id=temp_id, email=email, password=password, otp=otp)
         temp.save()
@@ -184,9 +188,10 @@ class RegisterAssociateView(APIView):
 
         subject = "Welcome to HealthCare, This is a confidential mail with password for your associate login"
         message = password
-        from_mail = settings.EMAIL_HOST_USER
+        # from_mail = settings.EMAIL_HOST_USER
         to_mail = [email]
-        send_mail(subject, message, from_mail, to_mail)
+        # send_mail(subject, message, from_mail, to_mail)
+        send_notification_email(subject, message, from_mail, to_mail)
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -280,12 +285,14 @@ class UserResetPasswordView(APIView):
             subject = "Welcome to HealthCare, This is the otp for your verification"
             message = f"Hello{email}!\n\nWelcome to HealthCare. To reset your account password, please use the following OTP to verify your identity: {otp}\n\nPlease enter this OTP to complete the password reset process.\n\nIf you did not request a password reset for your HealthCare account, please disregard this email.\n\nBest regards,\nThe HealthCare Team"
 
-            from_mail = settings.EMAIL_HOST_USER
+            # from_mail = settings.EMAIL_HOST_USER
 
             recipient_list = [email]
             print(recipient_list, "receiver")
 
-            send_mail(subject, message, from_mail, recipient_list)
+            # send_mail(subject, message, from_mail, recipient_list)
+            send_notification_email(subject, message, recipient_list)
+
             print("mail send ")
 
             temp_id = f"{email}_{otp}"

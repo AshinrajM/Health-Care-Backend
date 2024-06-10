@@ -54,13 +54,9 @@ def available_associates(request):
 
         # Convert the dictionary to a list of associates
         data = list(associates_dict.values())
-
-        # Return JSON response
         return Response(data, status=status.HTTP_200_OK)
 
     except Exception as e:
-        # Handle the case where there are no available associates
-        # return JsonResponse([], safe=False)
         return Response(
             {"message": "Associates with slots doesnt exist"},
             status=status.HTTP_404_NOT_FOUND,
@@ -68,7 +64,7 @@ def available_associates(request):
 
 
 @api_view(["GET"])
-# user side
+# associate side
 def Available_List(request):
     availabilities = Available.objects.exclude(booking__isnull=False).order_by("date")
     serializer = AvailableSerializer(availabilities, many=True)
