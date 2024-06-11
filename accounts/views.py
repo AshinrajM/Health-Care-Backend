@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import *
 from booking.models import *
 from booking.serializers import *
-from django.db.models import Q
+from django.db.models import Q, Avg
 from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
@@ -343,10 +343,10 @@ class OtpVerifyView(APIView):
             )
 
 
+# to get the latest associate-user data
 @api_view(["GET"])
 def get_user(request):
     user_id = request.query_params.get("userId")
-
     try:
         user = User.objects.get(id=user_id)
         serializer = UserSerializer(user)
@@ -357,18 +357,26 @@ def get_user(request):
             available_serializer = AvailableSerializer(available_slots, many=True)
 
             bookings_count = Booking.objects.filter(
-                Q(slot__associate__user=user) & Q(status="confirmed")
+                Q(slot__associate__user=user) & Q(status="completed")
             ).count()
 
+            completed_bookings = Booking.objects.filter(
+                Q(slot__associate__user=user) & Q(status="completed")
+            )
+            average_rating = completed_bookings.aggregate(average_rating=Avg("rating__rating_value"))
+            
         combined_data = {
             "user": serializer.data,
             "available_slots": available_serializer.data,
             "count": bookings_count,
+            "average_rating":average_rating,
         }
         return Response(combined_data, status=status.HTTP_200_OK)
 
     except User.DoesNotExist:
-        return Response({"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 # @api_view(["GET"])
