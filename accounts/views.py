@@ -368,9 +368,7 @@ def get_user(request):
         return Response(combined_data, status=status.HTTP_200_OK)
 
     except User.DoesNotExist:
-        return Response(
-            {"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND)
 
 
 # @api_view(["GET"])

@@ -10,9 +10,15 @@ class AvailableSerializer(serializers.ModelSerializer):
         # fields = ["id", "associate", "date", "is_morning", "is_noon"]
         fields = "__all__"
 
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ['rating_value']
+
 
 class BookingSerializer(serializers.ModelSerializer):
     associate = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -23,6 +29,12 @@ class BookingSerializer(serializers.ModelSerializer):
             return AssociateSerializer(obj.slot.associate).data
 
         return None
+    
+    def get_rating(self, obj):
+        rating = Rating.objects.filter(booking=obj).first()
+        if rating:
+            return RatingSerializer(rating).data
+        return None 
 
 
 class AssociateBookings(serializers.ModelSerializer):

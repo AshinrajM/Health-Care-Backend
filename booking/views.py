@@ -328,13 +328,9 @@ def booking_details(request):
 def bookings(request):
     user_id = request.query_params.get("userId")
     print(user_id, "uderID")
-
-    # By default, if include_associate query parameter is not provided or set to true,
-    # the slot data will be included
     include_associate = (
         request.query_params.get("include_associate", "true").lower() == "true"
     )
-
     try:
         bookings = Booking.objects.filter(user=user_id).order_by("-id")
         booking_serializer = BookingSerializer(
@@ -502,3 +498,20 @@ class StatisticsView(APIView):
             return Response(
                 {"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+@api_view(['POST'])
+def add_rating(request):
+    try:
+        bookingId = request.data.get('bookingId')
+        value = request.data.get('rating')
+        if bookingId is None or value is None:
+            return Response({"error": "bookingId and rating are required fields."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            booking = Booking.objects.get(booking_id=bookingId)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+        Rating.objects.create(booking=booking, rating_value=value)
+
+        return Response({"message": "Rating added successfully."}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

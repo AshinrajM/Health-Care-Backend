@@ -24,12 +24,18 @@ class Available(models.Model):
                 obj = Available.objects.get(pk=self.pk)
                 if obj.date == timezone.now().date() and obj.status != "booked":
                     obj.delete()
-                    print(f"Available object with ID {self.pk} has been deleted on {obj.date}.")
+                    print(
+                        f"Available object with ID {self.pk} has been deleted on {obj.date}."
+                    )
                 else:
                     if obj.status == "booked":
-                        print(f"Available object with ID {self.pk} is booked and cannot be deleted.")
+                        print(
+                            f"Available object with ID {self.pk} is booked and cannot be deleted."
+                        )
                     else:
-                        print(f"Available object with ID {self.pk} is not due for deletion today.")
+                        print(
+                            f"Available object with ID {self.pk} is not due for deletion today."
+                        )
             except Available.DoesNotExist:
                 print(f"Available object with ID {self.pk} does not exist.")
 
@@ -79,3 +85,8 @@ class Booking(models.Model):
         super().save(
             *args, **kwargs
         )  # Call the superclass's save method to actually save the instance
+
+
+class Rating(models.Model):
+    rating_value = models.CharField(max_length=5, blank=True, null=True)
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE)

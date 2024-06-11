@@ -13,4 +13,5 @@ urlpatterns = [
     path("booking-list/", booking_list, name="booking_list"),
     path("cancel-booking/", cancel_booking, name="cancel_booking"),
     path("statistics", StatisticsView.as_view(), name="statistics"),
+    path("add-rating", add_rating, name="add-rating"),
 ]
