@@ -2,7 +2,7 @@ import stripe
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, action
-from rest_framework import generics, viewsets
+from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
@@ -13,6 +13,15 @@ from django.http import JsonResponse
 from decimal import Decimal, ROUND_DOWN
 from django.utils import timezone
 from utils.mail_utils import send_notification_email
+from rest_framework.pagination import PageNumberPagination
+
+# from rest_framework import generics, pagination, status
+# from rest_framework.decorators import api_view
+# from rest_framework.response import Response
+# from .models import Booking
+# from .serializers import BookingSerializer
+
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
@@ -324,6 +333,29 @@ def booking_details(request):
 
 
 # booking history - user
+# @api_view(["GET"])
+# def bookings(request):
+#     user_id = request.query_params.get("userId")
+#     print(user_id, "uderID")
+#     include_associate = (
+#         request.query_params.get("include_associate", "true").lower() == "true"
+#     )
+#     try:
+#         bookings = Booking.objects.filter(user=user_id).order_by("-id")
+
+#         booking_serializer = BookingSerializer(
+#             bookings, many=True, context={"include_associate": include_associate}
+#         )
+#         booking_data = booking_serializer.data
+#         return Response({"booking": booking_data}, status=status.HTTP_200_OK)
+#     except Booking.DoesNotExist:
+#         return Response(
+#             {"message": "No bookings found for the user"},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+
+
 @api_view(["GET"])
 def bookings(request):
     user_id = request.query_params.get("userId")
@@ -331,13 +363,29 @@ def bookings(request):
     include_associate = (
         request.query_params.get("include_associate", "true").lower() == "true"
     )
+
     try:
+        # Apply filtering and ordering to the queryset
         bookings = Booking.objects.filter(user=user_id).order_by("-id")
+
+        # Instantiate the paginator
+        paginator = PageNumberPagination()
+
+        # Paginate the queryset
+        paginated_bookings = paginator.paginate_queryset(bookings, request)
+
+        # Serialize the paginated queryset
         booking_serializer = BookingSerializer(
-            bookings, many=True, context={"include_associate": include_associate}
+            paginated_bookings,
+            many=True,
+            context={"include_associate": include_associate},
         )
-        booking_data = booking_serializer.data
-        return Response({"booking": booking_data}, status=status.HTTP_200_OK)
+
+        # Get the paginated response from the paginator
+        paginated_response = paginator.get_paginated_response(booking_serializer.data)
+
+        # Return the paginated response with the desired structure
+        return Response({"booking": paginated_response.data}, status=status.HTTP_200_OK)
     except Booking.DoesNotExist:
         return Response(
             {"message": "No bookings found for the user"},
@@ -499,19 +547,27 @@ class StatisticsView(APIView):
                 {"error": "Booking or User not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 def add_rating(request):
     try:
-        bookingId = request.data.get('bookingId')
-        value = request.data.get('rating')
+        bookingId = request.data.get("bookingId")
+        value = request.data.get("rating")
         if bookingId is None or value is None:
-            return Response({"error": "bookingId and rating are required fields."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "bookingId and rating are required fields."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
             booking = Booking.objects.get(booking_id=bookingId)
         except Booking.DoesNotExist:
-            return Response({"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         Rating.objects.create(booking=booking, rating_value=value)
 
-        return Response({"message": "Rating added successfully."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Rating added successfully."}, status=status.HTTP_201_CREATED
+        )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
