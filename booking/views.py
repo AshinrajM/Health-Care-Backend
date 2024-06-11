@@ -96,7 +96,7 @@ class AvailableView(APIView):
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
         if associate_id:
-            availabilities = Available.objects.filter(associate=associate_id)
+            availabilities = Available.objects.filter(associate=associate_id).order_by('-date')
 
         serializer = AvailableSerializer(availabilities, many=True)
         for data in serializer.data:
