@@ -23,9 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields_to_update = ["date_of_birth", "location", "profile_picture"]
         for field_name in fields_to_update:
             field_value = validated_data.get(field_name)
-            if (
-                field_value is not None
-            ):  # Check if the field is provided in validated_data
+            if (field_value is not None):  # Check if the field is provided in validated_data
                 setattr(user, field_name, field_value)
 
         user.save()
@@ -39,18 +37,13 @@ class AssociateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_id = validated_data.pop("user", None)
-        print(
-            "user id got  msg from associateserial -------1---------------------------"
-        )
 
         print(user_id.id)
         if user_id:
             user = User.objects.get(id=user_id.id)
 
             associate = Associate.objects.create(user=user, **validated_data)
-            print(
-                "associate created msg from associateuserserial --------------2--------------------"
-            )
+            
 
             return associate
 
@@ -67,9 +60,6 @@ class AssociateUserSerializer(serializers.ModelSerializer):
         if password:
             user.set_password(password)
             user.save()
-            print(
-                "user created msg from associateuserserial ----------------------------------"
-            )
             return user
 
 
@@ -91,3 +81,12 @@ class UserLoginSerializer(serializers.Serializer):
                 return data
             raise serializers.ValidationError("invalid user credentials")
         raise serializers.ValidationError("Both fields are required")
+
+
+# class AssociateUserDataSerializer(serializers.ModelSerializer):
+
+#     user_data = UserSerializer(source="user", read_only=True)
+
+#     class Meta:
+#         model = Associate
+#         fields = "__all__"

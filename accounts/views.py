@@ -102,10 +102,8 @@ class RegisterView(APIView):
 
         subject = "Welcome to HealthCare, This is the otp for your verification"
         message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification   is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
-        # from_mail = settings.EMAIL_HOST_USER
         recipient_list = [email]
 
-        # send_mail(subject, message, from_mail, recipient_list)
         send_notification_email(subject, message, recipient_list)
 
         temp_id = f"{email}_{otp}"
@@ -373,3 +371,20 @@ def get_user(request):
         return Response(
             {"error": "user doesnt exist"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+# @api_view(["GET"])
+# def get_associate(request):
+#     user_id = request.query_params.get("userId")
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return Response({"error": "User not found."}, status=404)
+
+#     try:
+#         associate = Associate.objects.get(user=user)
+#     except Associate.DoesNotExist:
+#         return Response({"error": "Associate not found."}, status=404)
+
+#     serializer = AssociateUserDataSerializer(associate)
+#     return Response(serializer.data, status=status.HTTP_200_OK)

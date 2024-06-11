@@ -458,7 +458,6 @@ def cancel_booking(request):
             )
 
     except stripe.error.InvalidRequestError as e:
-        # Handle Stripe invalid request errors
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
