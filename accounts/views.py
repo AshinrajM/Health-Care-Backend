@@ -1,3 +1,4 @@
+import stripe
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.decorators import api_view
@@ -10,6 +11,7 @@ from .models import *
 from booking.models import *
 from booking.serializers import *
 from django.db.models import Q, Avg
+from django.db import transaction
 from django.contrib.auth import authenticate, login, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
@@ -80,6 +82,124 @@ class AssociateListView(APIView):
         associates = Associate.objects.all()
         serializer = AssociateSerializer(associates, many=True)
         return Response(serializer.data)
+
+    def patch(self, request):
+        print("patch-----------------------------------------------")
+        print("patch-----------------------------------------------")
+        print("patch-----------------------------------------------")
+        try:
+            associate_id = request.data.get("associateId")
+            print("arrived")
+            associate = Associate.objects.get(id=associate_id)
+            user = User.objects.get(associate=associate)
+
+            if not associate.is_active:
+                associate.is_active = True
+                associate.save()
+                user.is_active = True
+                user.save()
+
+                subject = "HealthCare: Your Account has been UnBlocked"
+                message = "Your account has been Unblocked, You can begin your work from today"
+                send_notification_email(subject, message, user.email)
+                return Response(
+                    {"success": "Associate deactivated successfully."},
+                    status=status.HTTP_200_OK,
+                )
+
+            slots = Available.objects.filter(associate=associate)
+            slots.update(status="associate_blocked")
+
+            bookings = Booking.objects.filter(
+                slot__associate=associate, status="confirmed"
+            )
+
+            if not bookings.exists():
+                # If no bookings exist, deactivate the associate and user
+                associate.is_active = False
+                associate.save()
+                user.is_active = False
+                user.save()
+
+                subject = "HealthCare: Your Account has been Blocked"
+                message = (
+                    "Your account has been blocked due to low performance ratings. "
+                    "Please contact support for further assistance."
+                )
+                send_notification_email(subject, message, user.email)
+
+                print("completed with no bookings")
+                print("completed with no bookings")
+                print("completed with no bookings")
+                print("completed with no bookings")
+                print("completed with no bookings")
+                return Response(
+                    {"success": "Associate deactivated successfully."},
+                    status=status.HTTP_200_OK,
+                )
+
+            with transaction.atomic():
+                for booking in bookings:
+                    try:
+                        refund = stripe.Refund.create(payment_intent=booking.payment_id)
+                        if refund.status == "succeeded":
+                            booking.status = "cancelled_by_admin"
+                            booking.save()
+                            booking.slot.status = "associate_blocked"
+                            booking.slot.save()
+
+                            subject = "HealthCare , Your Booking got cancelled"
+                            message = f"Booking cancelled on {booking.date} and because of the immediate problem faced by the associate and refund procedure initiated, there will be deductions in this. Apologies from our side."
+                            recipient = booking.user.email
+                            send_notification_email(subject, message, recipient)
+
+                        else:
+                            # Handle refund failure
+                            return Response(
+                                {"error": "Failed to refund the payment."},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                    except stripe.error.StripeError as e:
+                        # Handle Stripe errors
+                        return Response(
+                            {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                        )
+                    except Exception as e:
+                        # Handle other exceptions
+                        return Response(
+                            {"error": str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+            associate.is_active = False
+            associate.save()
+            user.is_active = False
+            user.save()
+            subject = "HealthCare , Your  account has been got blocked"
+            message = f"Your account has been blocked ,the ratings for your performance is very low so your account has temperorily blocked"
+            recipient = user.email
+            send_notification_email(subject, message, recipient)
+            print("completed with  bookings")
+            print("completed with bookings")
+            print("completed with bookings")
+            print("completed with bookings")
+            print("completed with bookings")
+            return Response(
+                {"success": "Bookings cancelled and refunded successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        except Associate.DoesNotExist:
+            return Response(
+                {"error": "Associate not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class RegisterView(APIView):
@@ -189,7 +309,7 @@ class RegisterAssociateView(APIView):
         # from_mail = settings.EMAIL_HOST_USER
         to_mail = [email]
         # send_mail(subject, message, from_mail, to_mail)
-        send_notification_email(subject, message, from_mail, to_mail)
+        send_notification_email(subject, message, to_mail)
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -363,13 +483,15 @@ def get_user(request):
             completed_bookings = Booking.objects.filter(
                 Q(slot__associate__user=user) & Q(status="completed")
             )
-            average_rating = completed_bookings.aggregate(average_rating=Avg("rating__rating_value"))
-            
+            average_rating = completed_bookings.aggregate(
+                average_rating=Avg("rating__rating_value")
+            )
+
         combined_data = {
             "user": serializer.data,
             "available_slots": available_serializer.data,
             "count": bookings_count,
-            "average_rating":average_rating,
+            "average_rating": average_rating,
         }
         return Response(combined_data, status=status.HTTP_200_OK)
 

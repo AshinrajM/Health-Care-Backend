@@ -10,6 +10,7 @@ class Available(models.Model):
     STATUS_CHOICES = [
         ("active", "active"),
         ("booked", "booked"),
+        ("asociate_blocked and cancelled", "asociate_blocked and cancelled"),
     ]
 
     associate = models.ForeignKey(Associate, on_delete=models.CASCADE)
@@ -48,6 +49,7 @@ class Booking(models.Model):
         ("confirmed", "confirmed"),
         ("completed", "completed"),
         ("cancelled", "cancelled"),
+        ("cancelled_by_admin", "cancelled_by_admin"),
     ]
     booking_id = models.CharField(max_length=10, default="HC0001", unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -6,7 +6,7 @@ from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When,Value, BooleanField
 from django.db.models.functions import TruncMonth
 from django.conf import settings
 from django.http import JsonResponse
@@ -20,7 +20,6 @@ from rest_framework.pagination import PageNumberPagination
 # from rest_framework.response import Response
 # from .models import Booking
 # from .serializers import BookingSerializer
-
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -96,7 +95,18 @@ class AvailableView(APIView):
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
         if associate_id:
-            availabilities = Available.objects.filter(associate=associate_id).order_by('-date')
+            # availabilities = Available.objects.filter(associate=associate_id).order_by('-date')
+            availabilities = (
+                Available.objects.filter(associate=associate_id)
+                .annotate(
+                    is_active=Case(
+                        When(status="active", then=Value(True)),
+                        default=Value(False),
+                        output_field=BooleanField(),
+                    )
+                )
+                .order_by("-is_active", "-date")
+            )
 
         serializer = AvailableSerializer(availabilities, many=True)
         for data in serializer.data:
@@ -116,36 +126,26 @@ class AvailableView(APIView):
         noon = request.data.get("is_noon")
         morning = request.data.get("is_morning")
 
-        query = Q(date=date, associate=associate_id) & (
-            Q(is_morning=morning) | Q(is_noon=noon)
+        query = (
+            Q(date=date, associate=associate_id)
+            & (
+                Q(is_morning=morning)
+                | Q(is_noon=noon)
+                | (Q(is_morning=True) & Q(is_noon=True))
+            )
+            & Q(status__in=["active", "booked"])
         )
-        instances = Available.objects.filter(query)
-        if instances:
-            return Response(
-                {"error": "exists on this shift"},
-                status=status.HTTP_409_CONFLICT,
-            )
 
-        existing = Available.objects.filter(
-            date=date, associate=associate_id, is_morning=True, is_noon=True
-        ).exists()
-        if existing:
-            return Response(
-                {"error": "A slot already exists on this day"},
-                status=status.HTTP_409_CONFLICT,
-            )
+        existing_instance = Available.objects.filter(query).exists()
 
-        existing_instance = Available.objects.filter(
-            date=date, associate=associate_id, is_morning=morning, is_noon=noon
-        ).exists()
         if existing_instance:
             return Response(
                 {
-                    "error": "A slot with the same date and associate already exists."
-                    # "error": "An instance with the same date and associate already exists."
+                    "error": "Associate already has an active or booked slot on this day."
                 },
                 status=status.HTTP_409_CONFLICT,
             )
+
         serializer = AvailableSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -355,7 +355,6 @@ def booking_details(request):
 #         )
 
 
-
 @api_view(["GET"])
 def bookings(request):
     user_id = request.query_params.get("userId")
@@ -400,9 +399,11 @@ class Booking_view(APIView):
         print(associate_id, "working")
         if associate_id:
             try:
-                bookings = Booking.objects.filter(
-                    slot__associate_id=associate_id
-                ).select_related("user")
+                bookings = (
+                    Booking.objects.filter(slot__associate_id=associate_id)
+                    .select_related("user")
+                    .order_by("-id")
+                )
                 # print("bookinfs", bookings)
                 serializer = AssociateBookings(bookings, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
