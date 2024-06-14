@@ -6,7 +6,7 @@ from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
-from django.db.models import Q, Count, Case, When,Value, BooleanField
+from django.db.models import Q, Count, Case, When, Value, BooleanField
 from django.db.models.functions import TruncMonth
 from django.conf import settings
 from django.http import JsonResponse
@@ -33,12 +33,13 @@ def available_associates(request):
         available_slots = Available.objects.filter(Q(status="active")).select_related(
             "associate"
         )
-
         associates_dict = {}
 
         for slot in available_slots:
-            associate = slot.associate
+            associate = slot.associate  
             if associate.id not in associates_dict:
+
+
                 associates_dict[associate.id] = {
                     "id": associate.id,
                     "name": associate.name,
@@ -61,7 +62,6 @@ def available_associates(request):
                 }
             )
 
-        # Convert the dictionary to a list of associates
         data = list(associates_dict.values())
         return Response(data, status=status.HTTP_200_OK)
 
@@ -95,7 +95,6 @@ class AvailableView(APIView):
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
         if associate_id:
-            # availabilities = Available.objects.filter(associate=associate_id).order_by('-date')
             availabilities = (
                 Available.objects.filter(associate=associate_id)
                 .annotate(
@@ -332,29 +331,6 @@ def booking_details(request):
         )
 
 
-# booking history - user
-# @api_view(["GET"])
-# def bookings(request):
-#     user_id = request.query_params.get("userId")
-#     print(user_id, "uderID")
-#     include_associate = (
-#         request.query_params.get("include_associate", "true").lower() == "true"
-#     )
-#     try:
-#         bookings = Booking.objects.filter(user=user_id).order_by("-id")
-
-#         booking_serializer = BookingSerializer(
-#             bookings, many=True, context={"include_associate": include_associate}
-#         )
-#         booking_data = booking_serializer.data
-#         return Response({"booking": booking_data}, status=status.HTTP_200_OK)
-#     except Booking.DoesNotExist:
-#         return Response(
-#             {"message": "No bookings found for the user"},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-
-
 @api_view(["GET"])
 def bookings(request):
     user_id = request.query_params.get("userId")
@@ -423,10 +399,12 @@ class Booking_view(APIView):
             print(booking.slot.associate.user, "checking associate")
             associateUser = booking.slot.associate.user
             associate_share = booking.amount_paid * Decimal("0.6")
-            print(associate_share, "fee ")
+            print(associate_share, "fee---")
             associateUser.wallet += associate_share
             associateUser.save()
             booking.status = updated_status
+            booking.slot.status="completed"
+            booking.slot.save()
             booking.save()
             return Response({"message": "updated booking"}, status=status.HTTP_200_OK)
         except Booking.DoesNotExist:

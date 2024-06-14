@@ -47,5 +47,5 @@ class GetMessage(APIView):
         ).order_by("created")
 
         serializer = ChatSerializer(query_set, many=True)
-        print(serializer.data)
+        print("------------------------------",serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)

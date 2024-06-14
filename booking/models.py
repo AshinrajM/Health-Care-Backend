@@ -10,6 +10,7 @@ class Available(models.Model):
     STATUS_CHOICES = [
         ("active", "active"),
         ("booked", "booked"),
+        ("completed", "completed"),
         ("asociate_blocked and cancelled", "asociate_blocked and cancelled"),
     ]
 
