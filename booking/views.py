@@ -6,7 +6,17 @@ from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
 from rest_framework.response import Response
-from django.db.models import Q, Count, Case, When, Value, BooleanField
+from django.db.models import (
+    Q,
+    Count,
+    Case,
+    When,
+    Value,
+    BooleanField,
+    Sum,
+    F,
+    DecimalField,
+)
 from django.db.models.functions import TruncMonth
 from django.conf import settings
 from django.http import JsonResponse
@@ -36,9 +46,8 @@ def available_associates(request):
         associates_dict = {}
 
         for slot in available_slots:
-            associate = slot.associate  
+            associate = slot.associate
             if associate.id not in associates_dict:
-
 
                 associates_dict[associate.id] = {
                     "id": associate.id,
@@ -284,7 +293,7 @@ def handle_payment(payment_intent):
     subject = "Welcome to HealthCare, This is booking confirmation mail"
     message_to_user = (
         f"Hello {booking.user.email} your booking has been confirmed on {booking.date},\n"
-        f"Our person {booking.slot.associate.name} will be there on time to take care, Have a nice day"
+        f"Our person {booking.slot.associate.name} will be there on time({booking.shift}) to take care, Have a nice day"
     )
 
     message_to_associate = (
@@ -396,16 +405,20 @@ class Booking_view(APIView):
 
         try:
             booking = Booking.objects.get(booking_id=bookingId)
+            print("bookings", booking)
             print(booking.slot.associate.user, "checking associate")
             associateUser = booking.slot.associate.user
             associate_share = booking.amount_paid * Decimal("0.6")
             print(associate_share, "fee---")
             associateUser.wallet += associate_share
             associateUser.save()
+
             booking.status = updated_status
-            booking.slot.status="completed"
-            booking.slot.save()
             booking.save()
+
+            booking.slot.status = "completed"
+            booking.slot.save()
+
             return Response({"message": "updated booking"}, status=status.HTTP_200_OK)
         except Booking.DoesNotExist:
             return Response(
@@ -510,6 +523,36 @@ class StatisticsView(APIView):
                 .order_by("month")
             )
 
+            total_revenue = (
+                Booking.objects.filter(status="completed").aggregate(
+                    total_revenue=Sum("amount_paid")
+                )["total_revenue"]
+                or 0
+            )
+
+            company_profit = (
+                Booking.objects.filter(status="completed").aggregate(
+                    profit=Sum(
+                        Case(
+                            When(
+                                status="completed", then=F("amount_paid") * Decimal(0.4)
+                            ),
+                            When(
+                                status="cancelled", then=F("amount_paid") * Decimal(0.2)
+                            ),
+                            output_field=DecimalField(),
+                            default=Value(0),
+                        )
+                    )
+                )["profit"]
+                or 0
+            )
+
+            conversion_rate = (
+                round((completed_bookings / total_bookings) * 100, 2) if total_bookings else 0
+            )
+            last_three_bookings = list(Booking.objects.order_by("-created_at")[:3].values())
+
             data = {
                 "total_associates": total_associates,
                 "total_users": total_users,
@@ -518,6 +561,10 @@ class StatisticsView(APIView):
                 "completed_bookings": completed_bookings,
                 "cancelled_bookings": cancelled_bookings,
                 "monthly_bookings": list(monthly_bookings),
+                "total_revenue": total_revenue,
+                "profit": company_profit,
+                "conversion_rate": conversion_rate,
+                "last_three_bookings": last_three_bookings,
             }
 
             return Response(data, status=status.HTTP_200_OK)
