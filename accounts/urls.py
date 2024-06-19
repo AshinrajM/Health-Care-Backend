@@ -18,5 +18,6 @@ urlpatterns = [
     ),
     path("reset-verify-otp", OtpVerifyView.as_view(), name="reset_verify_otp"),
     path("get-user", get_user, name="get_user"),
-    # path("get-associate", get_associate, name="get_associate"),
+    path("update-associate-fee", update_associate_fee_per_hour , name="update-associate-fee"),
+   
 ]

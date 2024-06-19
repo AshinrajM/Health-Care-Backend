@@ -84,9 +84,9 @@ class AssociateListView(APIView):
         return Response(serializer.data)
 
     def patch(self, request):
-        print("patch-----------------------------------------------")
-        print("patch-----------------------------------------------")
-        print("patch-----------------------------------------------")
+        print("patch---------------------------------------")
+        print("patch---------------------------------------")
+        print("patch---------------------------------------")
         try:
             associate_id = request.data.get("associateId")
             print("arrived")
@@ -200,6 +200,23 @@ class AssociateListView(APIView):
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+@api_view(["PATCH"])
+def update_associate_fee_per_hour(request):
+    fee_per_hour = request.data.get("salary")
+    associate_id = request.data.get("associateId")
+    try:
+        associate = Associate.objects.get(id=associate_id)
+        associate.fee_per_hour = fee_per_hour
+        associate.save()
+        # return Response({"message": "salary updated"}, status=status.HTTP_200_OK)
+        serializer = AssociateSerializer(associate)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Associate.DoesNotExist:
+        return Response(
+            {"error": "Associate not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 class RegisterView(APIView):
