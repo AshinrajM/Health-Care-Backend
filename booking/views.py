@@ -16,6 +16,9 @@ from django.db.models import (
     Sum,
     F,
     DecimalField,
+    Avg,
+    OuterRef,
+    Subquery,
 )
 from django.db.models.functions import TruncMonth
 from django.conf import settings
@@ -44,6 +47,8 @@ def available_associates(request):
             associate = slot.associate
             if associate.id not in associates_dict:
 
+                user = associate.user
+
                 associates_dict[associate.id] = {
                     "id": associate.id,
                     "name": associate.name,
@@ -53,6 +58,10 @@ def available_associates(request):
                     "fee_per_hour": associate.fee_per_hour,
                     "phone": associate.phone,
                     "description": associate.description,
+                    "user": {
+                        "location": user.location,
+                        "email": user.email,
+                    },
                     "slots": [],
                 }
 
@@ -596,3 +605,30 @@ def add_rating(request):
         )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+def get_average_associate_ratings(request):
+    # Get the average rating for each associate
+    associate_ratings = (
+        Rating.objects.values("booking__slot__associate")
+        .annotate(avg_rating=Avg("rating_value"))
+        .values(
+            "booking__slot__associate__id",
+            "booking__slot__associate__name",
+            "avg_rating",
+        )
+    )
+
+    # Get the list of associates with their average ratings
+    associates = list(
+        Associate.objects.annotate(
+            average_rating=Subquery(
+                associate_ratings.filter(
+                    booking__slot__associate=OuterRef("pk")
+                ).values("avg_rating")[:1]
+            )
+        ).values("id", "name", "average_rating")
+    )
+
+    return Response(associates, status=status.HTTP_200_OK)

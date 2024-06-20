@@ -1,4 +1,4 @@
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, unicode_literals  # this has to be on top 
 import os
 from celery import Celery
 from django.conf import settings
