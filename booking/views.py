@@ -549,9 +549,13 @@ class StatisticsView(APIView):
             )
 
             conversion_rate = (
-                round((completed_bookings / total_bookings) * 100, 2) if total_bookings else 0
+                round((completed_bookings / total_bookings) * 100, 2)
+                if total_bookings
+                else 0
             )
-            last_three_bookings = list(Booking.objects.order_by("-created_at")[:3].values())
+            last_three_bookings = list(
+                Booking.objects.order_by("-created_at")[:3].values()
+            )
 
             data = {
                 "total_associates": total_associates,
@@ -593,7 +597,7 @@ def add_rating(request):
         Rating.objects.create(booking=booking, rating_value=value)
 
         return Response(
-            {"message": "Rating added successfully."}, status=status.HTTP_201_CREATED
+            {"message": "Rating added successfully."}, status=status.HTTP_200_OK
         )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -194,3 +194,7 @@ STRIPE_WEBHOOK_SECRET = (
 )
 
 SITE_URL = "http://localhost:3000"
+
+
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
