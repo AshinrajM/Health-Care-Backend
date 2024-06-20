@@ -24,12 +24,7 @@ from decimal import Decimal, ROUND_DOWN
 from django.utils import timezone
 from utils.mail_utils import send_notification_email
 from rest_framework.pagination import PageNumberPagination
-
-# from rest_framework import generics, pagination, status
-# from rest_framework.decorators import api_view
-# from rest_framework.response import Response
-# from .models import Booking
-# from .serializers import BookingSerializer
+from .tasks import send_email
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -304,8 +299,8 @@ def handle_payment(payment_intent):
     recipient_associate = booking.slot.associate.user.email
     print("mails", recipient_associate, recipient_user)
 
-    send_notification_email(subject, message_to_user, recipient_user)
-    send_notification_email(subject, message_to_associate, recipient_associate)
+    send_email(subject, message_to_user, recipient_user)
+    send_email(subject, message_to_associate, recipient_associate)
 
     print("booking instance created", booking.id)
     print("booking instance created", booking.created_at)
@@ -480,7 +475,7 @@ def cancel_booking(request):
             subject = "Welcome to HealthCare,  Booking cancelled "
             message = f"Booking cancelled on {booking.date} and refund procedure initiated ,20% of the amount will be deducted and  the ₹{amount/100}.00 will be refunded within 5 days"
             recipient = booking.user.email
-            send_notification_email(subject, message, recipient)
+            send_email(subject, message, recipient)
 
             return Response(
                 {

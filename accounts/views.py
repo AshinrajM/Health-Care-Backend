@@ -19,6 +19,7 @@ from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
 from utils.mail_utils import send_notification_email
+from booking.tasks import send_email
 import pyotp
 
 
@@ -101,7 +102,7 @@ class AssociateListView(APIView):
 
                 subject = "HealthCare: Your Account has been UnBlocked"
                 message = "Your account has been Unblocked, You can begin your work from today"
-                send_notification_email(subject, message, user.email)
+                send_email(subject, message, user.email)
                 return Response(
                     {"success": "Associate deactivated successfully."},
                     status=status.HTTP_200_OK,
@@ -126,7 +127,7 @@ class AssociateListView(APIView):
                     "Your account has been blocked due to low performance ratings. "
                     "Please contact support for further assistance."
                 )
-                send_notification_email(subject, message, user.email)
+                send_email(subject, message, user.email)
 
                 print("completed with no bookings")
                 print("completed with no bookings")
@@ -151,7 +152,7 @@ class AssociateListView(APIView):
                             subject = "HealthCare , Your Booking got cancelled"
                             message = f"Booking cancelled on {booking.date} and because of the immediate problem faced by the associate and refund procedure initiated, there will be deductions in this. Apologies from our side."
                             recipient = booking.user.email
-                            send_notification_email(subject, message, recipient)
+                            send_email(subject, message, recipient)
 
                         else:
                             # Handle refund failure
@@ -177,7 +178,7 @@ class AssociateListView(APIView):
             subject = "HealthCare , Your  account has been got blocked"
             message = f"Your account has been blocked ,the ratings for your performance is very low so your account has temperorily blocked"
             recipient = user.email
-            send_notification_email(subject, message, recipient)
+            send_email(subject, message, recipient)
             print("completed with  bookings")
             print("completed with bookings")
             print("completed with bookings")
@@ -241,7 +242,7 @@ class RegisterView(APIView):
         message = f"Hello!\n\nThank you for signing up with HealthCare. Your OTP for account verification   is: {otp}\n\nPlease use this OTP to complete your registration.\n\nIf you did not sign up for a HealthCare account, please ignore this email.\n\nBest regards,\nThe HealthCare Team"
         recipient_list = [email]
 
-        send_notification_email(subject, message, recipient_list)
+        send_email(subject, message, recipient_list)
 
         temp_id = f"{email}_{otp}"
         temp = Temp(temp_id=temp_id, email=email, password=password, otp=otp)
@@ -326,7 +327,7 @@ class RegisterAssociateView(APIView):
         # from_mail = settings.EMAIL_HOST_USER
         to_mail = [email]
         # send_mail(subject, message, from_mail, to_mail)
-        send_notification_email(subject, message, to_mail)
+        send_email(subject, message, to_mail)
 
         return Response(associate_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -425,8 +426,7 @@ class UserResetPasswordView(APIView):
             recipient_list = [email]
             print(recipient_list, "receiver")
 
-            # send_mail(subject, message, from_mail, recipient_list)
-            send_notification_email(subject, message, recipient_list)
+            send_email(subject, message, recipient_list)
 
             print("mail send ")
 
