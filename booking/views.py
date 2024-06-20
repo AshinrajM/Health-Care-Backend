@@ -27,6 +27,7 @@ from decimal import Decimal, ROUND_DOWN
 from django.utils import timezone
 from utils.mail_utils import send_notification_email
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from .tasks import send_email
 
 
@@ -509,6 +510,8 @@ def cancel_booking(request):
 
 class StatisticsView(APIView):
 
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         try:
             total_associates = Associate.objects.count()
@@ -606,29 +609,3 @@ def add_rating(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-@api_view(["GET"])
-def get_average_associate_ratings(request):
-    # Get the average rating for each associate
-    associate_ratings = (
-        Rating.objects.values("booking__slot__associate")
-        .annotate(avg_rating=Avg("rating_value"))
-        .values(
-            "booking__slot__associate__id",
-            "booking__slot__associate__name",
-            "avg_rating",
-        )
-    )
-
-    # Get the list of associates with their average ratings
-    associates = list(
-        Associate.objects.annotate(
-            average_rating=Subquery(
-                associate_ratings.filter(
-                    booking__slot__associate=OuterRef("pk")
-                ).values("avg_rating")[:1]
-            )
-        ).values("id", "name", "average_rating")
-    )
-
-    return Response(associates, status=status.HTTP_200_OK)

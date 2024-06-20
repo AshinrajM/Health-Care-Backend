@@ -15,5 +15,4 @@ urlpatterns = [
     path("cancel-booking/", cancel_booking, name="cancel_booking"),
     path("statistics", StatisticsView.as_view(), name="statistics"),
     path("add-rating", add_rating, name="add-rating"),
-    path("avg-rating", get_average_associate_ratings, name="avg-rating"),
 ]

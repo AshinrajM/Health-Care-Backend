@@ -6,7 +6,7 @@ from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from .models import *
 from booking.models import *
 from booking.serializers import *
@@ -221,6 +221,9 @@ def update_associate_fee_per_hour(request):
 
 
 class RegisterView(APIView):
+
+    permission_classes=[AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -268,6 +271,9 @@ class RegisterView(APIView):
 
 
 class VerifyView(APIView):
+
+    permission_classes=[AllowAny]
+
     def post(self, request):
         otp = request.data.get("otp")
         temp_id = request.data.get("temp_id")
@@ -338,6 +344,9 @@ class GoogleSignUp(CreateAPIView):
 
 
 class UserLoginView(APIView):
+    
+    permission_classes=[AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
