@@ -51,7 +51,8 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = "accounts.User"
 
-ASGI_APPLICATION = "HealthCare.asgi.application"
+# ASGI_APPLICATION = "HealthCare.asgi.application"
+ASGI_APPLICATION = "HealthCare.routing.application"
 
 
 ### this code specifies that default authentication class to be used forall API views in the application
@@ -173,7 +174,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
-
     # ----------------
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
