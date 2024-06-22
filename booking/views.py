@@ -2,6 +2,7 @@ import stripe
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
@@ -36,21 +37,21 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
-def verify_token(request):
-    auth = JWTAuthentication()
-    header = auth.get_header(request)
-    print("Authorization Header:", header)
-    if header is None:
-        return None
+# def verify_token(request):
+#     auth = JWTAuthentication()
+#     header = auth.get_header(request)
+#     print("Authorization Header:", header)
+#     if header is None:
+#         return None
 
-    raw_token = auth.get_raw_token(header)
-    print("Raw Token:", raw_token)
-    if raw_token is None:
-        return None
+#     raw_token = auth.get_raw_token(header)
+#     print("Raw Token:", raw_token)
+#     if raw_token is None:
+#         return None
 
-    validated_token = auth.get_validated_token(raw_token)
-    print("Validated Token:", validated_token)
-    return validated_token
+#     validated_token = auth.get_validated_token(raw_token)
+#     print("Validated Token:", validated_token)
+#     return validated_token
 
 
 @api_view(["GET"])
@@ -58,11 +59,12 @@ def verify_token(request):
 def available_associates(request):
 
     print(request.headers, "CHECK HEADERS")
-    validated_token = verify_token(request)
-    if validated_token is None:
-        return Response(
-            {"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
-        )
+
+    # validated_token = verify_token(request)
+    # if validated_token is None:
+    #     return Response(
+    #         {"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
+    #     )
 
     try:
         # Query Available instances where either morning or noon slot is available
@@ -114,6 +116,7 @@ def available_associates(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 # associate side
 def Available_List(request):
     availabilities = Available.objects.exclude(booking__isnull=False).order_by("date")
@@ -132,6 +135,8 @@ def Available_List(request):
 
 class AvailableView(APIView):
     # associate - schedules on associate side
+    permission_classes = [AllowAny]
+
     def get(self, request):
         associate_id = request.query_params.get("associate_id", None)
         print(associate_id, "id received")
@@ -205,6 +210,9 @@ class AvailableView(APIView):
 
 
 class StripeCheckout(APIView):
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
         print(request.data, "testing data")
         price = request.data.get("payable_amount")
@@ -255,6 +263,9 @@ class StripeCheckout(APIView):
 
 
 class Webhook(APIView):
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
         print("arrived")
         event = None
@@ -288,6 +299,7 @@ class Webhook(APIView):
         return JsonResponse({"success": True})
 
 
+@permission_classes([IsAuthenticated])
 def handle_payment(payment_intent):
     print("arrived in booking creation")
     user_id = payment_intent["metadata"]["user_id"]
@@ -344,6 +356,7 @@ def handle_payment(payment_intent):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def booking_details(request):
     user_id = request.query_params.get("userId")
     print(user_id, "why")
@@ -373,6 +386,7 @@ def booking_details(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def bookings(request):
     user_id = request.query_params.get("userId")
     print(user_id, "uderID")
@@ -411,6 +425,10 @@ def bookings(request):
 
 # associate
 class Booking_view(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+
     def get(self, request):
         associate_id = request.query_params.get("associateId")
         print(associate_id, "working")
@@ -459,6 +477,7 @@ class Booking_view(APIView):
 
 
 @api_view(["GET"])
+@permission_classes([IsAdminUser])
 def booking_list(request):
     try:
         bookings = Booking.objects.all().select_related("user", "slot__associate")
@@ -472,6 +491,7 @@ def booking_list(request):
 
 
 @api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
 def cancel_booking(request):
     booking_id = request.data.get("bookingId")
     user_id = request.data.get("userId")
@@ -538,6 +558,7 @@ def cancel_booking(request):
 class StatisticsView(APIView):
 
     permission_classes = [IsAdminUser]
+
     def get(self, request):
         try:
             total_associates = Associate.objects.count()
@@ -612,6 +633,7 @@ class StatisticsView(APIView):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def add_rating(request):
     try:
         bookingId = request.data.get("bookingId")
