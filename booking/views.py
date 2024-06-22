@@ -1,7 +1,7 @@
 import stripe
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics, viewsets, pagination
 from .serializers import *
 from rest_framework import status
@@ -27,16 +27,43 @@ from decimal import Decimal, ROUND_DOWN
 from django.utils import timezone
 from utils.mail_utils import send_notification_email
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .tasks import send_email
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
+def verify_token(request):
+    auth = JWTAuthentication()
+    header = auth.get_header(request)
+    print("Authorization Header:", header)
+    if header is None:
+        return None
+
+    raw_token = auth.get_raw_token(header)
+    print("Raw Token:", raw_token)
+    if raw_token is None:
+        return None
+
+    validated_token = auth.get_validated_token(raw_token)
+    print("Validated Token:", validated_token)
+    return validated_token
+
+
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def available_associates(request):
+
+    print(request.headers, "CHECK HEADERS")
+    validated_token = verify_token(request)
+    if validated_token is None:
+        return Response(
+            {"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
     try:
         # Query Available instances where either morning or noon slot is available
         available_slots = Available.objects.filter(Q(status="active")).select_related(
@@ -510,8 +537,7 @@ def cancel_booking(request):
 
 class StatisticsView(APIView):
 
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAdminUser]
     def get(self, request):
         try:
             total_associates = Associate.objects.count()
@@ -608,4 +634,3 @@ def add_rating(request):
         )
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-

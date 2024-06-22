@@ -1,12 +1,13 @@
 import stripe
+import pyotp
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import IsAuthenticated,AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from .models import *
 from booking.models import *
 from booking.serializers import *
@@ -20,14 +21,17 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.hashers import check_password
 from utils.mail_utils import send_notification_email
 from booking.tasks import send_email
-import pyotp
 
 
 class UsersManageView(APIView):
+
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [AllowAny]
 
     def get(self, request, pk=None):
-        users = User.objects.filter(is_associate=False)
+        users = User.objects.filter(
+            Q(is_associate=False) & Q(is_superuser=False) & Q(is_staff=False)
+        )
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
@@ -79,6 +83,8 @@ class UsersManageView(APIView):
 
 class AssociateListView(APIView):
 
+    permission_classes = [AllowAny]
+
     def get(self, request):
         associates = Associate.objects.all()
         serializer = AssociateSerializer(associates, many=True)
@@ -86,8 +92,7 @@ class AssociateListView(APIView):
 
     def patch(self, request):
         print("patch---------------------------------------")
-        print("patch---------------------------------------")
-        print("patch---------------------------------------")
+
         try:
             associate_id = request.data.get("associateId")
             print("arrived")
@@ -128,11 +133,6 @@ class AssociateListView(APIView):
                     "Please contact support for further assistance."
                 )
                 send_email(subject, message, user.email)
-
-                print("completed with no bookings")
-                print("completed with no bookings")
-                print("completed with no bookings")
-                print("completed with no bookings")
                 print("completed with no bookings")
                 return Response(
                     {"success": "Associate deactivated successfully."},
@@ -179,11 +179,6 @@ class AssociateListView(APIView):
             message = f"Your account has been blocked ,the ratings for your performance is very low so your account has temperorily blocked"
             recipient = user.email
             send_email(subject, message, recipient)
-            print("completed with  bookings")
-            print("completed with bookings")
-            print("completed with bookings")
-            print("completed with bookings")
-            print("completed with bookings")
             return Response(
                 {"success": "Bookings cancelled and refunded successfully."},
                 status=status.HTTP_200_OK,
@@ -204,6 +199,7 @@ class AssociateListView(APIView):
 
 
 @api_view(["PATCH"])
+@permission_classes([IsAdminUser])
 def update_associate_fee_per_hour(request):
     fee_per_hour = request.data.get("salary")
     associate_id = request.data.get("associateId")
@@ -211,7 +207,6 @@ def update_associate_fee_per_hour(request):
         associate = Associate.objects.get(id=associate_id)
         associate.fee_per_hour = fee_per_hour
         associate.save()
-        # return Response({"message": "salary updated"}, status=status.HTTP_200_OK)
         serializer = AssociateSerializer(associate)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Associate.DoesNotExist:
@@ -222,7 +217,7 @@ def update_associate_fee_per_hour(request):
 
 class RegisterView(APIView):
 
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get("email")
@@ -250,7 +245,6 @@ class RegisterView(APIView):
         temp_id = f"{email}_{otp}"
         temp = Temp(temp_id=temp_id, email=email, password=password, otp=otp)
         temp.save()
-
         return Response({"temp_id": temp_id}, status=status.HTTP_200_OK)
 
     def patch(self, request):
@@ -272,7 +266,7 @@ class RegisterView(APIView):
 
 class VerifyView(APIView):
 
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         otp = request.data.get("otp")
@@ -305,6 +299,9 @@ class VerifyView(APIView):
 
 
 class RegisterAssociateView(APIView):
+
+    permission_classes = [IsAdminUser]
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -339,13 +336,16 @@ class RegisterAssociateView(APIView):
 
 
 class GoogleSignUp(CreateAPIView):
+
+    permission_classes = [AllowAny]
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
 class UserLoginView(APIView):
-    
-    permission_classes=[AllowAny]
+
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get("email")
@@ -410,6 +410,9 @@ class UserLoginView(APIView):
 
 
 class UserResetPasswordView(APIView):
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         if not email:
@@ -475,6 +478,9 @@ class UserResetPasswordView(APIView):
 
 
 class OtpVerifyView(APIView):
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
         temp_id = request.data.get("tempId")
         otp = request.data.get("otp")
@@ -491,6 +497,7 @@ class OtpVerifyView(APIView):
 
 # to get the latest associate-user data
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_user(request):
     user_id = request.query_params.get("userId")
     try:
