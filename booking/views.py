@@ -428,7 +428,6 @@ class Booking_view(APIView):
 
     permission_classes = [IsAuthenticated]
 
-
     def get(self, request):
         associate_id = request.query_params.get("associateId")
         print(associate_id, "working")
